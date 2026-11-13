@@ -2,6 +2,9 @@
 "use strict";
 /*
  * Contrast check (P2-2, D-THEME-5). `node scripts/contrast.cjs`
+ * Reads EVERY colour from src/app/globals.css at runtime (no token value is
+ * duplicated here; an unparsable value throws, never falls back). Optional:
+ * `--css <path>` or CONTRAST_CSS=<path> checks another copy of the file.
  * Reads the text and surface tokens from src/app/globals.css, composites the
  * translucent surfaces in sRGB over their worst case (the ambient glow peak
  * under painted glass, for every hue on the ring), and fails (exit 1) when a
@@ -13,20 +16,49 @@ const fs = require("node:fs");
 const path = require("node:path");
 
 const ROOT = path.join(__dirname, "..");
-const css = fs.readFileSync(path.join(ROOT, "src", "app", "globals.css"), "utf8");
+const argIdx = process.argv.indexOf("--css");
+const cssPath = argIdx > -1 ? process.argv[argIdx + 1] : process.env.CONTRAST_CSS;
+if (argIdx > -1 && !cssPath) throw new Error("--css needs a path");
+const css = fs.readFileSync(cssPath ? path.resolve(cssPath) : path.join(ROOT, "src", "app", "globals.css"), "utf8");
 const ring = (() => {
   const src = fs.readFileSync(path.join(ROOT, "src", "lib", "move-hue.ts"), "utf8");
   const m = src.match(/MOVE_HUE_RING[^=]*=\s*Object\.freeze\(\[([\s\S]*?)\]\)/);
-  return [...m[1].replace(/\/\/.*$/gm, "").matchAll(/\d+/g)].map((x) => Number(x[0]));
+  if (!m) throw new Error("MOVE_HUE_RING not found in move-hue.ts");
+  const hues = [...m[1].replace(/\/\/.*$/gm, "").matchAll(/\d+/g)].map((x) => Number(x[0]));
+  if (!hues.length) throw new Error("MOVE_HUE_RING is empty");
+  return hues;
+})();
+const defaultHue = (() => {
+  const m = css.match(/@property\s+--move-hue\s*\{[^}]*initial-value:\s*([\d.]+)/);
+  if (!m) throw new Error("@property --move-hue initial-value not found");
+  return Number(m[1]);
 })();
 
-// ---- token lookup -------------------------------------------------------
-const root = css.match(/:root\s*\{([\s\S]*?)\n\}/)[1];
-function token(name) {
-  const m = root.match(new RegExp("--" + name + ":\\s*([^;]+);"));
-  if (!m) throw new Error("token not found: --" + name);
-  return m[1].replace(/\/\*.*?\*\//g, "").trim();
+// ---- css block + token lookup ---------------------------------------------
+function block(header) {
+  const i = css.search(header);
+  if (i < 0) throw new Error("css block not found: " + header);
+  const open = css.indexOf("{", i);
+  let depth = 0;
+  for (let j = open; j < css.length; j++) {
+    if (css[j] === "{") depth++;
+    else if (css[j] === "}" && --depth === 0) return css.slice(open + 1, j).replace(/\/\*[\s\S]*?\*\//g, "");
+  }
+  throw new Error("unterminated css block: " + header);
 }
+const rootBlock = block(/:root\s*\{/);
+const declOf = (body, prop) => {
+  const m = body.match(new RegExp("(?:^|[\\s;{])" + prop + ":\\s*([^;]+);"));
+  if (!m) throw new Error("declaration not found: " + prop);
+  return m[1].replace(/\s+/g, " ").trim();
+};
+// Resolve var(--x) (except --move-hue) from :root, recursively.
+function resolve(v) {
+  return v.replace(/var\(\s*(--[\w-]+)\s*\)/g, (all, name) =>
+    name === "--move-hue" ? all : resolve(declOf(rootBlock, name)));
+}
+const token = (name) => resolve(declOf(rootBlock, "--" + name));
+const utility = (name, prop) => resolve(declOf(block(new RegExp("@utility\\s+" + name + "\\s*\\{")), prop));
 
 // ---- colour maths -------------------------------------------------------
 function parseOklch(v, hue) {
@@ -50,7 +82,7 @@ function toSrgb({ l, c, h }) {
     return v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055;
   });
 }
-const color = (v, hue = 265) => {
+const color = (v, hue = defaultHue) => {
   const o = parseOklch(v, hue);
   return { rgb: toSrgb(o), a: o.a };
 };
@@ -72,7 +104,6 @@ const FG = {
   "fg-secondary": token("fg-secondary"),
   "fg-tertiary": token("fg-tertiary"),
 };
-const white = (a) => ({ rgb: [1, 1, 1], a });
 function surfaces(hue) {
   const baseTop = color(token("surface-base-top")).rgb;
   const glowPeak = over(color(token("hue-glow"), hue), baseTop);
@@ -90,8 +121,8 @@ function surfaces(hue) {
     "glass-paint over glow peak (card face)": [paint, true],
     "glass-control on card face": [over(control, paint), false],
     "glass-control on page (Input)": [over(control, glowPeak), true],
-    "glass-bubble on card face": [over(white(0.07), paint), false],
-    "hue-bubble on card face": [over(color("oklch(0.58 0.1 var(--move-hue) / 0.24)", hue), paint), false],
+    "glass-bubble on card face": [over(color(utility("glass-bubble", "background-color")), paint), false],
+    "hue-bubble on card face": [over(color(utility("hue-bubble", "background-color"), hue), paint), false],
   };
 }
 
@@ -99,6 +130,10 @@ function surfaces(hue) {
 const LARGE = new Set([]); // large-text tokens (3:1); every text token here uses fg-primary at 4.5
 const rows = new Map(); // key -> {min, hex, hue, floor, barred}
 const failures = [];
+// hue-scope must re-derive the same hue tokens as :root (comment says "keep in step").
+for (const t of ["glass-shade", "hue-glow", "hue-glow-soft", "hue-shadow", "focus-ring"]) {
+  if (token(t) !== utility("hue-scope", "--" + t)) failures.push(`hue-scope --${t} differs from :root`);
+}
 let lowest = { ratio: Infinity, label: "" };
 
 for (const hue of ring) {
@@ -116,8 +151,8 @@ for (const hue of ring) {
 // hue-tag text on its own fill, and inverse on primary.
 for (const hue of ring) {
   const paint = surfaces(hue)["glass-paint over glow peak (card face)"][0];
-  const fill = over(color("oklch(0.62 0.11 var(--move-hue) / 0.16)", hue), paint);
-  const r = ratio(color("oklch(0.9 0.05 var(--move-hue))", hue).rgb, fill);
+  const fill = over(color(utility("hue-tag", "background-color"), hue), paint);
+  const r = ratio(color(utility("hue-tag", "color"), hue).rgb, fill);
   const key = "hue-tag text on its own fill";
   const cur = rows.get(key);
   if (!cur || r < cur.min) rows.set(key, { min: r, hex: hex(fill), hue, floor: 4.5, barred: false });
@@ -139,6 +174,7 @@ for (const hue of ring) {
   }
 }
 
+console.log(`hues checked: ${ring.join(", ")}  (default ${defaultHue})`);
 for (const [key, v] of rows) {
   const pass = v.min >= v.floor;
   const tag = v.barred ? "barred" : pass ? "ok" : "FAIL";
