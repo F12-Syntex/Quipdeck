@@ -50,7 +50,7 @@ Two layouts only.
 | Phone | viewport width < 1024 px | Bottom nav, full-height portrait card, detail as bottom sheet |
 | Desktop | viewport width >= 1024 px | Top nav, landscape card stage, detail as side pane |
 
-Inside the card, layout follows the **card's own width** (container query), not the viewport: `CardBack` is stacked below 720 px of container width and two-column from 720 px. The same component therefore lays itself out correctly in the phone feed, the desktop feed, the sheet and the desktop pane.
+Inside the card, layout follows the **card's own width** (container query), not the viewport: `CardBack` is stacked below 720 px of container width and two-column from 720 px. The same component therefore lays itself out correctly everywhere: stacked in the phone feed, the sheet and the desktop pane (capped at 560 px); two-column in the desktop feed and on a phone held in landscape.
 
 Tablets (640 to 1023 px wide) get the phone layout with the card capped at 480 px wide and centred, and the sheet capped at 560 px wide.
 
@@ -83,11 +83,11 @@ Clamp rules (also content rules for the pipeline): trigger line 3 lines max, res
 | Gap under breakdown | 12 | 8 |
 | Clip (16:9, `min-height: 200px`, F7) | 200 | 200 |
 | Gap | 8 | 6 |
-| Action row | 44 | 40 (targets stay 44 wide, hit area padded) |
-| **Fixed total** | **412** | **372** |
+| Action row | 44 | 44 |
+| **Fixed total** | **412** | **376** |
 | Text line height | 20 | 18 |
 | Worst case text (3 + 3 + 2 lines) | 160 | 144 |
-| **Worst case card height needed** | **572** | **516** |
+| **Worst case card height needed** | **572** | **520** |
 
 | Viewport (w x dvh) | Tier | Card height available | Fits worst case |
 |---|---|---|---|
@@ -95,7 +95,7 @@ Clamp rules (also content rules for the pipeline): trigger line 3 lines max, res
 | 390 x 664 (iPhone Safari, toolbars showing) | Compact | 588 | Yes |
 | 375 x 667 | Compact | 591 | Yes |
 | 360 x 640 | Compact | 564 | Yes |
-| 375 x 553 (iPhone SE Safari, toolbars showing) | Compact | 477 | Typical content (5 lines, 462) yes; worst case no |
+| 375 x 553 (iPhone SE Safari, toolbars showing) | Compact | 477 | Typical content (5 lines, 466) yes; worst case no |
 
 **Guarantee: no inner scrolling at any viewport height of 600 px or more.** Below 600 px in portrait, the text block alone becomes scrollable (`overflow-y: auto`, scroll chaining left on so the feed still advances at its ends). In short landscape (`orientation: landscape` and height < 600 px) the 480 px cap is lifted, the card goes full width, and the container query switches it to the two-column layout, which needs only about 300 px of height.
 
@@ -267,6 +267,32 @@ The clip box never changes size between states, so nothing around it moves.
  source   (mute) (<3)      source   (mute) (<3)      source          (<3)
 ```
 
+The fallback in place, phone and desktop. Everything except the inside of the clip box and the missing mute button is identical to the playing state.
+
+```
+ phone, card back, clip failed          desktop, card back, clip failed
++----------------------------------+   +--------------------------------------------------+
+| +------------------------------+ |   | [Mock seriousness]                               |
+| | [Mock seriousness]           | |   |                       +------------------------+ |
+| |                              | |   | HOST                  |                        | |
+| | HOST                         | |   | (trigger line      )  |          (!)           | |
+| | (trigger line             )  | |   |               GUEST   |    Clip unavailable    | |
+| |                        GUEST | |   |   (response line   )  |  The exchange is all   | |
+| |   (response line           ) | |   |                       |         here.          | |
+| |                              | |   |                       +------------------------+ |
+| | breakdown line               | |   |                       Placeholder         (<3)   |
+| |                              | |   | breakdown line                                   |
+| | +--------------------------+ | |   +--------------------------------------------------+
+| | |           (!)            | | |
+| | |     Clip unavailable     | | |
+| | | The exchange is all here.| | |
+| | +--------------------------+ | |
+| | Placeholder             (<3) | |
+| +------------------------------+ |
+|        ( Feed |  Saved )         |
++----------------------------------+
+```
+
 - Loading: the box is a skeleton until the player reports ready; the player then fades in (no fade under reduced motion).
 - Error: reached by player error, script failure or an 8 s ready timeout (D-CLIP-8). The message is centred in the box. The mute button is removed; the heart does not move (it is right-anchored). The move tag, both lines and the breakdown are exactly as before. Ref: Grok [video error pill](https://mobbin.com/screens/fe248bef-19ec-4f49-b83b-0096463a9c65): keep the frame, say it plainly, leave the rest of the screen working.
 - Phone and desktop differ only in the size of the box.
@@ -369,8 +395,43 @@ Not an overlay. Desktop has room to show the list and the card together, so choo
 - Container: max width 1200 px, centred, 24 px side padding, 88 px top (nav).
 - Grid: `400px minmax(0, 1fr)`, gap 32 px. Left: title, search (sticky), groups; this column scrolls. Right: detail pane, sticky, height `100dvh - 112px`.
 - Nothing selected: the pane shows one quiet line. Nothing is auto-selected (D-SAVED-7).
-- Empty and no-results states render in the left column with the same content as phone; in the empty state the right pane is not rendered and the message is centred in the full container.
 - The selected row is marked (`aria-current="true"`).
+
+### Desktop, empty and no results
+
+```
+ empty (nothing saved): no search, no pane, message centred in the container
++----------------------------------------------------------------------------+
+|                            ( Feed |  Saved )                               |
+|                                                                            |
+|   Saved                                                                    |
+|                                                                            |
+|                                                                            |
+|                                 (heart)                                    |
+|                            Nothing saved yet                               |
+|                 Tap the heart on a card to keep it here.                   |
+|                                                                            |
+|                                                                            |
++----------------------------------------------------------------------------+
+
+ no results (search missed): message in the list column, pane unchanged
++----------------------------------------------------------------------------+
+|                            ( Feed |  Saved )                               |
+|                                                                            |
+|   Saved                          +-------------------------------------+   |
+|   ( Q  zzz                  x )  |                                     |   |
+|                                  |                                     |   |
+|                                  |                                     |   |
+|           No matches             |      Choose a card to replay it.    |   |
+|      Try a different word.       |      (or the card already open)     |   |
+|        [ Clear search ]          |                                     |   |
+|                                  |                                     |   |
+|                                  +-------------------------------------+   |
++----------------------------------------------------------------------------+
+```
+
+- Empty: the two-pane grid is not rendered at all. Title top left as usual; icon, title and helper centred in the container, both axes. The copy says "Tap" on coarse pointers and "Click" on fine pointers (same CSS swap as the hint, D-FEED-6).
+- No results: the list column keeps the title and the search field (with its clear button) and shows the message where the groups were. The pane keeps whatever it was showing: the placeholder, or the open card (a search does not close a card the user is watching).
 
 ---
 
@@ -441,8 +502,8 @@ Content order (DOM): close button (overlay only), cue as title (`h2`), then `Car
 ```
 
 - Non-modal region. The list stays live; clicking another row swaps the card (and its clip). Escape clears the selection.
-- Inside the pane the card is centred, max width 480 px when the pane is under 720 px wide (stacked `CardBack`), and switches to the two-column `CardBack` when the pane is 720 px or wider (viewports from about 1360 px), with the cue spanning both columns as the title.
-- Browser Back steps back through selections (each selection is a history entry on phone only; on desktop selections use `replaceState` so Back leaves Saved in one step).
+- Inside the pane the card is **always the stacked `CardBack`**, centred, max width 560 px, at every desktop width. The list already takes 400 px, so a stacked card gives a larger clip (up to 528 px wide) than two columns squeezed into the pane would. The 560 px cap keeps the card's container under the 720 px threshold, so the container query does this with no special case.
+- Selections use `replaceState`, so browser Back leaves Saved in one step (D-SAVED-5). The pane body scrolls if a card is taller than the pane.
 
 ---
 
@@ -468,3 +529,4 @@ Content order (DOM): close button (overlay only), cue as title (`h2`), then `Car
 3. The desktop card is a landscape stage and the desktop Saved is two panes; neither is the phone layout scaled up.
 4. Nav is bottom centre on phone, top centre on desktop, and never moves.
 5. The clip box does not change size between loading, playing and error.
+6. The desktop Saved pane shows a stacked card at 1440 x 900 and at 1024 x 768.

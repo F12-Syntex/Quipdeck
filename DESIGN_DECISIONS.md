@@ -19,7 +19,7 @@ Each decision has an ID. Other docs cite these IDs. A decision is changed only b
 | F4 | In the sandbox, the YouTube IFrame API loads, `host: youtube-nocookie.com` works, and `onReady` fires, but **every** video (valid IDs included) ends in `onError` 150 ("Video unavailable"). | Planner probe, headless Chromium, 2026-11-13 | Real playback cannot be verified here. All clip behaviour is tested against a stubbed IFrame API (D-TEST-2). The fallback path is real and fires live. |
 | F5 | Only the `playwright` library resolves (from `/opt/node-tools`). There is no `@playwright/test` and no axe. npm registry is reachable. | `require.resolve`, curl | e2e files are CommonJS run by `node --test` (D-TEST-1). axe is an explicit install in P5. |
 | F6 | shadcn style is `base-nova` on Base UI, not Radix. No `asChild`. | `STACK.md`, `components.json` | Dialog and sheet use the Base UI primitives already in `src/components/ui`. |
-| F7 | YouTube requires an embedded player viewport of at least 200 x 200 px and forbids overlays in front of the player. | YouTube API Services, Required Minimum Functionality | Clip box has `min-height: 200px`. No element of ours sits on top of the iframe (D-CLIP-9). |
+| F7 | YouTube requires an embedded player viewport of at least 200 x 200 px and forbids overlays in front of the player. | YouTube API Services policy text, recalled, **not re-read this session**. P1-4 confirms against the current policy page and reports. | Clip box has `min-height: 200px`. No element of ours sits on top of the iframe (D-CLIP-9). Both rules are kept even if the policy has changed: they also give the simplest tap handling. |
 
 ---
 

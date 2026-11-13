@@ -52,8 +52,8 @@ Roles first, `data-testid` where a role is not enough. Phase 4 must not rename t
 
 | ID | Item | Expected | Verify |
 |---|---|---|---|
-| R-1 | `/` | Feed. Static prerender. | CMD: `npm run build` lists `/` as prerendered. PW: `GET /` 200, `[data-testid="feed"]` visible. |
-| R-2 | `/saved` | Saved list. Static prerender. | CMD as R-1. PW: `h1` "Saved" visible. |
+| R-1 | `/` | Feed. Static shell (not fully dynamic). | CMD: `npm run build` succeeds and lists `/` as static or partially prerendered. PW: `GET /` 200, `[data-testid="feed"]` visible. |
+| R-2 | `/saved` | Saved list. Static shell; the `Suspense` fallback (title plus skeleton rows) is what is prerendered. | CMD as R-1. PW: `h1` "Saved" visible; with JavaScript disabled, `h1` and `saved-skeleton` are in the HTML. |
 | R-3 | `/saved?card=<id>` | Saved with the detail open for that card. Unknown id: no detail, no error. | PW: load `/saved?card=c01` with c01 saved: `[data-testid="card-detail"][data-card-id="c01"]` visible. Load `/saved?card=nope`: no detail, no console error. |
 | R-4 | Not found | One line and a link to the feed; nav present. | PW: `GET /nope` 404; link named "Go to the feed" navigates to `/`. |
 | R-5 | Error boundary | One line and a "Reload" button. | Code review plus PW by throwing in a dev-only scenario if practical; otherwise MAN. |
@@ -133,7 +133,7 @@ Roles first, `data-testid` where a role is not enough. Phase 4 must not rename t
 | CB-1 | Move tag at the top | Small tag with the move label, first visible element. | PW: `move` box is above `exchange`; text equals the label. |
 | CB-2 | Exchange as dialogue | Trigger (speaker, line) then response (speaker, line), two separate blocks, not a paragraph. | PW: `trigger` above `response`; speakers and lines equal the content; exchange is a list with 2 items. |
 | CB-3 | Response reads as the punchline | Trigger aligned left, response aligned right (stacked layout). | PW at 390: trigger left edge < response left edge; response right edge >= trigger right edge. |
-| CB-4 | Breakdown | One line under the exchange, equals `card.breakdown`. | PW: text match; box below `response` (stacked) . |
+| CB-4 | Breakdown | One line under the exchange, equals `card.breakdown`. | PW: text match; in the stacked layout its box is below `response`. |
 | CB-5 | Clip below, on every card | Every card back has a clip box; stacked layout puts it under the breakdown. | PW: flip each card; `clip` exists; at 390 its top is below the breakdown's bottom. |
 | CB-6 | Heart and mute | Both present on the back, each at least 44x44, in the bottom third on phone. | PW at 390x844: boxes >= 44x44; top > 0.6 * viewport height. |
 | CB-7 | Source | Shown when present, absent when not. | PW: `source` text equals `card.source`; UT or PW with a card without source. |
@@ -202,7 +202,7 @@ All PW checks run against the stubbed API unless marked MAN.
 | SL-6 | Search only searches saved cards | Unsaved cards never appear. | PW: query matching an unsaved card only: no-results state. |
 | SL-7 | Empty groups hidden while searching | | PW: query matching one move: 1 group. |
 | SL-8 | Clear search | Clear button and Escape empty the field and restore the list. | PW. |
-| SL-9 | Empty state | With no saves: "Nothing saved yet" and the helper line; no search field. | PW: fresh storage; `saved-empty` visible; `searchbox` count 0. |
+| SL-9 | Empty state | With no saves: "Nothing saved yet" and the helper line; no search field; on desktop no detail pane, message centred. | PW: fresh storage; `saved-empty` visible; `searchbox` count 0; at 1440x900 `detail-placeholder` count 0 and the message centre is within 8 px of the container centre x. |
 | SL-10 | No-results state | "No matches", helper, "Clear search" button that restores the list. | PW: query "zzzqqq". |
 | SL-11 | Loading state | Skeleton rows until saves are read; the empty state never flashes when saves exist. | PW: seeded storage; from first paint to list, `saved-empty` is never visible (poll or MutationObserver in an init script). With JavaScript disabled: `saved-skeleton` visible. |
 | SL-12 | Order inside a group | Save order, oldest first. | PW: save A then B in the same move; rows are A, B. |
@@ -226,7 +226,7 @@ All PW checks run against the stubbed API unless marked MAN.
 | OV-7 | Unsave from the detail | Heart turns off, detail stays open, row disappears from the list; re-pressing re-saves. | PW: press heart: `aria-pressed="false"`, detail still visible; close: row gone. Repeat with press twice: row present. |
 | OV-8 | Unsaving the last card | After close, the empty state shows. | PW. |
 | OV-9 | Does not flip | Tapping the detail body does nothing. | PW: click breakdown text; detail unchanged. |
-| OV-10 | Desktop pane | Clicking a row shows the card in the right pane, non-modal; the row gets `aria-current="true"`; another row swaps the card; Escape clears. | PW at 1440x900: `data-mode="pane"`, no `role="dialog"`; iframe count stays <= 1 while switching rows. |
+| OV-10 | Desktop pane | Clicking a row shows the card in the right pane, non-modal, stacked layout (clip under the text, card at most 560 px wide); the row gets `aria-current="true"`; another row swaps the card; Escape clears. | PW at 1440x900 and 1024x768: `data-mode="pane"`, no `role="dialog"`; `clip` top is below `breakdown` bottom; detail card width <= 560; iframe count stays <= 1 while switching rows. |
 | OV-11 | Desktop Back | Back leaves Saved in one step. | PW: from `/`, go to Saved, select two rows, press Back: URL is `/`. |
 | OV-12 | Fallback in the detail | Broken clip shows the fallback; text intact. | PW with `c14` saved. |
 | OV-13 | Sheet height | At most 92% of the viewport height; bottom safe area respected. | PW at 390x844: sheet height <= 0.92 * 844. |
@@ -259,9 +259,9 @@ All PW checks run against the stubbed API unless marked MAN.
 | A-3 | Landmarks and headings | One `main` per route; `nav` labelled; `h1` on Saved; cue is a heading in the card and the detail. | PW role queries. |
 | A-4 | Names | Every button has an accessible name; the iframe has a title. | axe; PW. |
 | A-5 | Reduced motion | No rotation, no drift, no pulse, no shimmer, instant keyboard scroll. | PW with `reducedMotion: "reduce"`: no running CSS animations (`document.getAnimations()` empty or all finished) on feed front; FL-11. |
-| A-6 | Reduced transparency | Glass chrome falls back to a solid-enough fill. | PW with `forcedColors` not applicable; emulate `prefers-reduced-transparency` if supported, else code review. |
+| A-6 | Reduced transparency | Glass chrome falls back to a solid-enough fill. | PW: emulate `prefers-reduced-transparency: reduce` if the browser supports it and check the nav's computed `backdrop-filter` is `none`; otherwise code review of the media query. |
 | A-7 | Pause mechanism | The clip can be stopped: tap the clip, or flip back. | CL-8; MAN for native tap. |
-| A-8 | Zoom | Usable at 200% zoom on desktop; text not clipped. | PW: `deviceScaleFactor` does not test this; use viewport 720x450 as a proxy and check no horizontal scroll. |
+| A-8 | Zoom | Usable at 200% zoom on desktop; text not clipped. | PW: viewport 720x450 as a proxy for 1440x900 at 200%; no horizontal scroll on `/` and `/saved`; cue fully inside the card. |
 | A-9 | Touch targets | All targets >= 44x44 on phone. | PW: every `button, a` box at 390. |
 
 ---
