@@ -170,6 +170,7 @@ All PW checks run against the stubbed API unless marked MAN.
 | CL-19 | Nothing over the player | No element of ours overlaps the iframe. | PW: `elementFromPoint` at the iframe centre and four inner corners returns the iframe. |
 | CL-20 | Keyboard survives a click in the clip | After clicking inside the clip, shortcuts still work. | PW: click clip, press ArrowDown: active card advances. |
 | CL-21 | Privacy | No request to `youtube.com/embed`, `ytimg.com` or any YouTube host before the first flip other than the API script; embeds use nocookie. | PW: record requests from load to just before the first flip. |
+| CL-23 | Blocked autoplay | If autoplay is blocked (e.g. iOS Low Power Mode) the clip shows paused with the player visible, so YouTube's own play button is reachable. No fallback. A tap plays it. | UT: controller with fake timers (CUED/UNSTARTED at deadline). PW with the stub in `blockedIds` mode: `data-clip-state="paused"`, iframe visible, no fallback. MAN: iOS Low Power Mode. |
 | CL-22 | Real playback | Autoplay, loop, captions and unmute work on real devices. | MAN: iOS Safari, Android Chrome, desktop Chrome or Safari, outside the sandbox. |
 
 ---
