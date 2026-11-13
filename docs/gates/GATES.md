@@ -31,3 +31,12 @@ Fixes (task P2-3, owned by the design system owner):
 6. Hue ring: 265/290/315 are indistinguishable and 15/40/65 go brown. Raise `hue-tag` and `hue-bubble` chroma to about 0.14, keeping text contrast at 5:1 or more.
 
 Phase 4 notes: the front move label goes to `text-body` (15 px), optionally hue-tinted (P4-2). Apply `rounded-group` to saved groups (P4-5). Tighten the breakdown to the response bubble and the loose gap above the clip (P4-2). The re-gate needs only the showcase re-shot.
+
+## Gate 2 re-review: APPROVED
+
+All six fixes landed. The approval depends on P2-4, the contrast script reading live tokens, which must exit 0.
+
+Carry-overs:
+- Hue ring: 190/215 and 15/345 are still near-twins. Give every move in `moves.ts` its own clearly distinct hue (10 slots for 10 moves) rather than 8 shared ones. Owner: P3-2 (`move-hue.ts`, design system owner).
+- Card back: the empty clip slab is the heaviest, deadest area. Give it a poster frame or hue wash while loading or in fallback. Owner: P4-3. Tighten the void between the tag and the first bubble. Owner: P4-2.
+- Specular is held at 0.12 and must never be raised.
