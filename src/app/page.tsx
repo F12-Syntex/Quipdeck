@@ -1,7 +1,9 @@
-export default function Home() {
+import { Feed } from "@/components/feed/feed";
+
+export default function FeedPage() {
   return (
-    <main className="flex min-h-dvh items-center justify-center">
-      <h1 className="text-2xl font-semibold">Quipdeck</h1>
+    <main className="h-dvh w-full">
+      <Feed />
     </main>
   );
 }
