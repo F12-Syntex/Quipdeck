@@ -50,3 +50,18 @@ Carry-overs:
 - P4-6 (integration): once P4-5 has merged, delete the unused `Sheet`, `SheetGrabber` and `Dialog` primitives, leaving one sheet primitive. The lead authorises this one design-system edit.
 - P4-1 (shell): `AppNav` always passes `active` to NavPill. The focus ring on the end item must not cross the pill outline.
 - MAN (device check): saved rows with 170/205 and 245/275 side by side.
+
+## Gate 4: screens, VETO 1 of 3 (narrow)
+
+Structure matches p1/p3 on all 24 shots, and the hierarchy holds. Ruling: the phone back, stacked at the bottom with the tag beside the bubbles, is accepted. Do not revert it.
+
+Fixes (task P4-9):
+1. saved-bottom 390: the stuck search pill fuses with the group card below it. Extend the opaque band in `saved-search.tsx` to the pill's bottom edge plus a 16 px fade.
+2. feed-back and detail, all viewports: there are two left edges. Remove the 4 px `px-1`/`pl-1` inset on the role labels, breakdown and source in `card-back.tsx`, leaving one edge.
+3. feed-back-fallback: drop "Clip unavailable" to `text-body text-fg-secondary`, and the subline and icon to `fg-tertiary`.
+Lead adds two notes:
+4. Saved at 1440: tint the selected row with its move hue, not neutral grey.
+5. The "Placeholder" source text must not ship. Omit `source` on the seed cards, since the field is optional.
+Re-gate shots: saved-bottom-390, plus feed-back, feed-back-fallback and detail at 390 and 1440.
+
+Phase 5 notes: verify the key-hint fade and the loading hue wash in a real browser run. Device checks owed (MAN): iOS tap-to-pause under reduced motion; hues 170/205 and 245/275 side by side.
