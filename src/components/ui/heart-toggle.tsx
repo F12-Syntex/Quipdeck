@@ -14,7 +14,8 @@ import { heartPop, heartScale } from "@/components/ui/motion"
  * whose heart pops once when it fills. Changes from the source: Base UI
  * Toggle (aria-pressed, controlled or not), the 44 px glass circle instead
  * of a hover-tinted ghost button, fg-primary fill instead of red-500, a
- * 1.18 pop (heartScale / heartPop) instead of 1.3, a pop on save only (never
+ * 1.18 pop (heartScale / heartPop) instead of 1.3, a pop on save only, by
+ * press or, when controlled, by any false -> true change of `pressed` (never
  * on mount, so an already-saved heart in the Saved detail stays still, and
  * never on unsave), and no pop under reduced motion. The press scale comes
  * from the Button recipe, so it also stops under reduced motion.
@@ -28,12 +29,21 @@ type HeartToggleProps = Omit<Toggle.Props, "children" | "render"> & {
 function HeartToggle({
   label = "Save",
   className,
+  pressed,
   onPressedChange,
   ...props
 }: HeartToggleProps) {
   const reduced = useReducedMotion()
-  // Bumped on each save by the user; keys the icon so the pop replays.
+  // Bumped on each save; keys the icon so the pop replays.
   const [pops, setPops] = React.useState(0)
+  // Controlled use (the card heart follows the saves store): a false -> true
+  // change of `pressed` from outside (the S key) pops too. The first render
+  // only records the value, so a heart that mounts saved stays still.
+  const [prevPressed, setPrevPressed] = React.useState(pressed)
+  if (pressed !== prevPressed) {
+    setPrevPressed(pressed)
+    if (pressed && !prevPressed && !reduced) setPops((n) => n + 1)
+  }
 
   return (
     <Toggle
@@ -45,9 +55,11 @@ function HeartToggle({
           typeof className === "function" ? className(state) : className
         )
       }
-      onPressedChange={(pressed, details) => {
-        if (pressed && !reduced) setPops((n) => n + 1)
-        onPressedChange?.(pressed, details)
+      pressed={pressed}
+      onPressedChange={(next, details) => {
+        // Uncontrolled: pop here. Controlled: the prop change above pops.
+        if (pressed === undefined && next && !reduced) setPops((n) => n + 1)
+        onPressedChange?.(next, details)
       }}
       {...props}
       render={(htmlProps, state) => (

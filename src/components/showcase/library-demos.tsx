@@ -113,6 +113,9 @@ function NavPillDemo() {
 /* ---------------- heart ---------------- */
 
 function HeartDemo() {
+  // Controlled, as on the card: the saves store drives `pressed`, and the S
+  // key can save from outside the button.
+  const [saved, setSaved] = useState(false);
   return (
     <div className={PANEL} data-testid="library-heart">
       <Source>HeartToggle, from Heart Favorite (21st.dev 10627)</Source>
@@ -132,6 +135,12 @@ function HeartDemo() {
         <Cell label="Disabled">
           <HeartToggle disabled />
         </Cell>
+        <div className="flex items-center gap-3" data-testid="library-heart-controlled">
+          <HeartToggle pressed={saved} onPressedChange={setSaved} />
+          <Button variant="quiet" size="pill-sm" onClick={() => setSaved((v) => !v)}>
+            Save from outside (S key)
+          </Button>
+        </div>
       </div>
       <p className="text-caption text-fg-tertiary">
         Each one is live. The heart pops to 1.18 once on save, never on unsave,
