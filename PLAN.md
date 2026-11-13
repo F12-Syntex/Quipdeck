@@ -202,3 +202,11 @@ GATE 4 -> { P5-1 | P5-2 } -> P5-3 -> FINAL GATE
 2. The Saved detail shows the cue as title plus the card back and does not flip (D-SAVED-6). Confirm at Gate 1.
 3. Reduced motion keeps muted autoplay (D-CLIP-10). Confirm at Gate 1.
 4. Who performs the real-device playback check (R1, R2, R4)? It cannot be done from the sandbox.
+
+**Lead answers:** (1) Keep the quiet end (D-FEED-3); the CEO may overrule at Gate 1. (2) Accepted. (3) Accepted. (4) The user, before release; flagged in the final report and `VALIDATION.md`.
+
+## Status
+
+| Task | Status |
+|---|---|
+| T0, T1, PLAN | done |
