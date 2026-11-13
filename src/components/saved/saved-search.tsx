@@ -22,10 +22,12 @@ export type SavedSearchProps = {
  *
  * While stuck, a backing (`--surface-base-top`, the colour of the ambient
  * base at the top of the screen) covers the strip from the screen's top
- * edge, safe area included, to the field's bottom edge plus a 16 px fade, so
- * rows never fuse with the field and only show below the fade. It shows only while stuck (a zero-height sentinel just before the
- * bar leaves the top), so nothing is painted over the title at rest and
- * the layout never changes.
+ * edge, safe area included, to the field's bottom edge plus a 28 px eased
+ * fade (60% at 14 px; final gate: 16 px still read as attached in motion),
+ * so rows never fuse with the field and only show below the fade. It shows
+ * only while stuck (a zero-height sentinel just before the bar leaves the
+ * top), so nothing is painted over the title at rest and the layout never
+ * changes.
  */
 export function SavedSearch({ ref, query, onQueryChange }: SavedSearchProps) {
   const barRef = useRef<HTMLDivElement>(null);
@@ -63,7 +65,7 @@ export function SavedSearch({ ref, query, onQueryChange }: SavedSearchProps) {
       <div ref={sentinelRef} aria-hidden="true" className="h-0" />
       <div
         ref={barRef}
-        className="sticky top-[env(safe-area-inset-top)] z-10 py-2 lg:top-0 before:pointer-events-none before:absolute before:-inset-x-4 before:top-[calc(-1*env(safe-area-inset-top))] before:-bottom-2 before:bg-[linear-gradient(to_bottom,var(--surface-base-top)_calc(100%-16px),transparent)] before:opacity-0 data-stuck:before:opacity-100 lg:before:top-0"
+        className="sticky top-[env(safe-area-inset-top)] z-10 py-2 lg:top-0 before:pointer-events-none before:absolute before:-inset-x-4 before:top-[calc(-1*env(safe-area-inset-top))] before:-bottom-5 before:bg-[linear-gradient(to_bottom,var(--surface-base-top)_calc(100%-28px),color-mix(in_oklab,var(--surface-base-top)_60%,transparent)_calc(100%-14px),transparent)] before:opacity-0 data-stuck:before:opacity-100 lg:before:top-0"
       >
         <div className="relative">
           <SearchIcon
