@@ -294,3 +294,5 @@ Nothing below ships. Each was considered and rejected; items marked (board) were
 **D-THEME-7. Shared UI uses the project cn (lead, after P4-6).** Every `src/components/ui/*.tsx` imported `cn` from the bare package, so the P4-7 tailwind-merge config never reached them, and documented sizes rendered wrong (DrawerTitle 16/400 instead of 18/600; NavPill item 16/400 instead of 13/500; Badge 12 instead of 13; quiet pill button). DESIGN_SYSTEM.md is the source of truth, so the imports switch to `@/lib/utils` and the screen-level workarounds are removed (P4-8). The rendered pixels change from the Gate 3 shots; the CEO re-judges them at Gate 4.
 
 **D-FEED-13. One moving thing on the feed front (lead, after P4-6).** The hint pulse runs two cycles when a card becomes active, then rests. The ambient drift (40 to 60 s cycle) is background and continues.
+
+**D-SAVED-9. Clear search size (lead, after P4-8).** DESIGN_SYSTEM section 10 lists Clear search as `quiet pill-sm` (13 px), but that misses the 44 px touch-target floor (A-9). It ships as `quiet pill` (15 px). Accessibility wins over the doc, and the doc is updated to match in P5.
