@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { AppNav } from "@/components/shell/app-nav";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -14,7 +15,8 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Quipdeck",
-  description: "A feed of flip-card jokes.",
+  description:
+    "A feed of short clips of unscripted wit: read the situation, flip the card, watch what was actually said.",
 };
 
 export const viewport: Viewport = {
@@ -28,9 +30,17 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
+      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      style={{ colorScheme: "dark" }}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        <link rel="preconnect" href="https://www.youtube-nocookie.com" />
+        <link rel="preconnect" href="https://www.youtube.com" />
+      </head>
+      <body className="min-h-full flex flex-col">
+        {children}
+        <AppNav />
+      </body>
     </html>
   );
 }
