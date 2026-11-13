@@ -19,7 +19,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Guest", line: "I'll call the stables. Do you want it with fries?" },
     breakdown: "Took 'I could eat a horse' at face value",
     clip: { youtubeId: A, start: 10, end: 22 },
-    source: "Placeholder",
   },
   {
     id: "c02",
@@ -29,7 +28,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Co-host", line: "Honestly, a little. Your handwriting suggests Tuesday." },
     breakdown: "Answered a rhetorical question as a real one",
     clip: { youtubeId: B, start: 3, end: 15 },
-    source: "Placeholder",
   },
   {
     id: "c03",
@@ -39,7 +37,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Host", line: "Five minutes? Call the historians. Wars have started over less." },
     breakdown: "Blew a tiny problem up to historic scale",
     clip: { youtubeId: C, start: 8, end: 20 },
-    source: "Placeholder",
   },
   {
     id: "c04",
@@ -49,7 +46,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Panellist", line: "Bold. Then the hallway, then the nation." },
     breakdown: "Stretched a small plan into a grand campaign",
     clip: { youtubeId: D, start: 20, end: 32 },
-    source: "Placeholder",
   },
   {
     id: "c05",
@@ -59,7 +55,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Host", line: "Well. That's not ideal for the soufflé." },
     breakdown: "Treated a catastrophe as a mild setback",
     clip: { youtubeId: E, start: 15, end: 27 },
-    source: "Placeholder",
   },
   {
     id: "c06",
@@ -69,7 +64,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Comedian", line: "So, a bit damp, then." },
     breakdown: "Shrank an ordeal to two words",
     clip: { youtubeId: A, start: 30, end: 42 },
-    source: "Placeholder",
   },
   {
     id: "c07",
@@ -79,7 +73,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Guest", line: "Not after what happened with the sandwich." },
     breakdown: "Reached back to an earlier bit for a fresh laugh",
     clip: { youtubeId: B, start: 8, end: 18 },
-    source: "Placeholder",
   },
   {
     id: "c08",
@@ -89,7 +82,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Host", line: "I once alphabetised my regrets. It took a weekend." },
     breakdown: "Turned praise into a joke at your own expense",
     clip: { youtubeId: C, start: 30, end: 42 },
-    source: "Placeholder",
   },
   {
     id: "c09",
@@ -99,7 +91,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Comedian", line: "I built a shelf once. It's now a very sturdy floor." },
     breakdown: "Admitted a flaw with a vivid, silly image",
     clip: { youtubeId: D, start: 40, end: 52 },
-    source: "Placeholder",
   },
   {
     id: "c10",
@@ -109,7 +100,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Guest", line: "Then I'd like to speak to the manager about the parking." },
     breakdown: "Accepted the premise and extended it",
     clip: { youtubeId: E, start: 40, end: 52 },
-    source: "Placeholder",
   },
   {
     id: "c11",
@@ -119,7 +109,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Panellist", line: "I'll schedule it. Fifteen minutes, then back to panicking." },
     breakdown: "Flipped the advice into the opposite behaviour",
     clip: { youtubeId: A, start: 50, end: 62 },
-    source: "Placeholder",
   },
   {
     id: "c12",
@@ -129,7 +118,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Co-host", line: "The screen is blank, but sure, the vibe is strong." },
     breakdown: "Said aloud what everyone was avoiding",
     clip: { youtubeId: B, start: 10, end: 20 },
-    source: "Placeholder",
   },
   {
     id: "c13",
@@ -139,7 +127,6 @@ export const cards: WitCard[] = [
     response: { speaker: "Guest", line: "Never trust a man who owns a single fork?" },
     breakdown: "Guessed a confident answer that swerved off course",
     clip: { youtubeId: C, start: 15, end: 25 },
-    source: "Placeholder",
   },
   {
     id: "c14",
@@ -153,6 +140,5 @@ export const cards: WitCard[] = [
     // Deliberately broken clip ID to exercise the text-only fallback.
     breakdown: "Treated a trivial matter with solemn gravity",
     clip: { youtubeId: "BROKEN_CLIP", start: 5, end: 15 },
-    source: "Placeholder",
   },
 ];

@@ -39,7 +39,7 @@ export function SavedGroups({
  * One rounded group (`rounded-group`) on unblurred glass, hairline
  * dividers. The label is the move tag in the move's own hue, the same pill
  * as the card back, so a group reads as that move at a glance; the rows
- * stay neutral (D-SAVED-4). The group does not clip: the end rows carry
+ * stay neutral, except the selected row, tinted with the move hue (D-SAVED-4). The group does not clip: the end rows carry
  * the radius themselves, so an inset focus ring keeps its corners.
  */
 function SavedGroup({
@@ -99,7 +99,7 @@ function SavedRow({
         return () => registerRow(card.id, null);
       }}
       onClick={() => onOpen(card.id)}
-      className="flex min-h-16 w-full flex-col items-start gap-0.5 px-4 py-3 text-left transition-colors duration-(--dur-fast) ease-soft -outline-offset-2 hover:bg-control-hover active:bg-control-pressed aria-[current=true]:bg-[var(--control-active)] [li:first-child>&]:rounded-t-group [li:last-child>&]:rounded-b-group"
+      className="flex min-h-16 w-full flex-col items-start gap-0.5 px-4 py-3 text-left transition-colors duration-(--dur-fast) ease-soft -outline-offset-2 hover:bg-control-hover active:bg-control-pressed aria-[current=true]:hue-bubble [li:first-child>&]:rounded-t-group [li:last-child>&]:rounded-b-group"
     >
       <span className="w-full truncate text-body font-medium text-fg-primary">
         {card.cue}

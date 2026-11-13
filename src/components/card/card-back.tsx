@@ -122,7 +122,7 @@ export function CardBack({
               >
                 <span
                   data-testid="speaker"
-                  className="px-1 text-label leading-4 text-fg-secondary [@media(max-height:700px)]:leading-[14px]"
+                  className="text-label leading-4 text-fg-secondary [@media(max-height:700px)]:leading-[14px]"
                 >
                   {card.trigger.speaker}
                 </span>
@@ -139,7 +139,7 @@ export function CardBack({
               >
                 <span
                   data-testid="speaker"
-                  className="px-1 text-label leading-4 text-fg-secondary [@media(max-height:700px)]:leading-[14px]"
+                  className="text-label leading-4 text-fg-secondary [@media(max-height:700px)]:leading-[14px]"
                 >
                   {card.response.speaker}
                 </span>
@@ -154,7 +154,7 @@ export function CardBack({
 
             <p
               data-testid="breakdown"
-              className="line-clamp-2 px-1 text-body text-fg-secondary [@media(max-height:700px)]:leading-[18px]"
+              className="line-clamp-2 text-body text-fg-secondary [@media(max-height:700px)]:leading-[18px]"
             >
               {card.breakdown}
             </p>
@@ -178,7 +178,7 @@ export function CardBack({
             {card.source ? (
               <p
                 data-testid="source"
-                className="min-w-0 flex-1 truncate pl-1 text-caption text-fg-tertiary"
+                className="min-w-0 flex-1 truncate text-caption text-fg-tertiary"
               >
                 {card.source}
               </p>

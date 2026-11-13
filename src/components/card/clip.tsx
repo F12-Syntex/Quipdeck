@@ -137,10 +137,10 @@ export function Clip({ clip, title, active }: ClipProps) {
         >
           <VideoOff
             aria-hidden="true"
-            className="mb-1 size-6 text-fg-secondary"
+            className="mb-1 size-6 text-fg-tertiary"
           />
-          <p className="text-line text-fg-primary">Clip unavailable</p>
-          <p className="text-body text-fg-secondary">
+          <p className="text-body text-fg-secondary">Clip unavailable</p>
+          <p className="text-body text-fg-tertiary">
             The exchange is all here.
           </p>
         </div>
