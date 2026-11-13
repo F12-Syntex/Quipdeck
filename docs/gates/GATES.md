@@ -65,3 +65,12 @@ Lead adds two notes:
 Re-gate shots: saved-bottom-390, plus feed-back, feed-back-fallback and detail at 390 and 1440.
 
 Phase 5 notes: verify the key-hint fade and the loading hue wash in a real browser run. Device checks owed (MAN): iOS tap-to-pause under reduced motion; hues 170/205 and 245/275 side by side.
+
+## Gate 4 re-review: APPROVED
+
+All five fixes landed: one left edge, a quiet fallback, the hue-tinted selected row, and no placeholder source.
+
+Final-gate notes:
+- saved-bottom 390: the card emerging under the stuck pill can read as a dropdown in a still. Judge it in motion. If it still reads as attached, strengthen the fade; do not add a divider.
+- Confirm real embeds in a browser run (gate shots use the stub).
+- Owed from Phase 5: key-hint fade, loading hue wash, device checks.
