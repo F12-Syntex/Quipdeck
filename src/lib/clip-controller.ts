@@ -192,7 +192,7 @@ export function createClipController(
       return;
     }
     if (current === PlayerState.BUFFERING && waited < playMaxWaitMs) {
-      const step = Math.min(playRecheckMs, playMaxWaitMs - waited);
+      const step = Math.min(Math.max(1, playRecheckMs), playMaxWaitMs - waited);
       playTimer = setTimeout(() => {
         playTimer = null;
         checkPlayStart(waited + step);
@@ -201,10 +201,25 @@ export function createClipController(
     }
     if (current === PlayerState.UNSTARTED || current === PlayerState.CUED) {
       stopPoll();
+      // Blocked autoplay: let keyboard users Tab into the player and start it.
+      setIframeTabbable(true);
       setState("paused");
       return;
     }
     fail();
+  };
+
+  /** tabindex -1 normally; removed while a blocked player needs the keyboard. */
+  const setIframeTabbable = (tabbable: boolean) => {
+    if (!player) return;
+    try {
+      const iframe = player.getIframe();
+      if (!iframe) return;
+      if (tabbable) iframe.removeAttribute("tabindex");
+      else iframe.setAttribute("tabindex", "-1");
+    } catch {
+      // The iframe may not exist yet; not critical.
+    }
   };
 
   /**
@@ -322,6 +337,7 @@ export function createClipController(
           switch (event.data) {
             case PlayerState.PLAYING:
               clearPlayTimer();
+              setIframeTabbable(false);
               setState("playing");
               startPoll();
               if (!autoUnmuteTried) {

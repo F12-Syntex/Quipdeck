@@ -45,7 +45,7 @@ class FakePlayer {
   muted = true;
   playerState: number = PlayerState.UNSTARTED;
   time = 0;
-  iframe = { attrs: {} as Record<string, string>, setAttribute(k: string, v: string) { this.attrs[k] = v; } };
+  iframe = { attrs: {} as Record<string, string>, setAttribute(k: string, v: string) { this.attrs[k] = v; }, removeAttribute(k: string) { delete this.attrs[k]; } };
 
   constructor(_el: unknown, options: YTPlayerOptions) {
     this.options = options;
@@ -547,6 +547,27 @@ describe("clip controller: playback-start timeout (D-CLIP-12)", () => {
       expect(states).toEqual(["loading", "paused"]);
     },
   );
+
+  it("blocked autoplay makes the iframe tabbable; playing restores tabindex -1", () => {
+    FakePlayer.behaviour.blockPlayAt = PlayerState.CUED;
+    const { player } = setup();
+    player.fireReady();
+    expect(player.iframe.attrs.tabindex).toBe("-1");
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS);
+    expect(player.iframe.attrs).not.toHaveProperty("tabindex");
+    expect(player.iframe.attrs.title).toBe("Clip: test cue");
+    player.fireState(PlayerState.PLAYING);
+    expect(player.iframe.attrs.tabindex).toBe("-1");
+  });
+
+  it("a playRecheckMs of 0 still advances (no zero-delay loop)", () => {
+    FakePlayer.behaviour.blockPlayAt = PlayerState.BUFFERING;
+    const { player, states } = setup({ playRecheckMs: 0 });
+    player.fireReady();
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS);
+    vi.advanceTimersByTime(PLAY_MAX_WAIT_MS);
+    expect(states.at(-1)).toBe("error");
+  });
 
   it("a tap after a blocked autoplay resumes the normal flow", () => {
     FakePlayer.behaviour.blockPlayAt = PlayerState.CUED;

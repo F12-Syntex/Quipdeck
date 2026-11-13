@@ -403,6 +403,11 @@ test("CL-17 (D-CLIP-12) blocked autoplay: paused with the player visible, no fal
   assert.ok(probe.w >= 200 && probe.h >= 100, JSON.stringify(probe));
   assert.equal(probe.visibility, "visible");
   assert.ok(probe.hit, "the frame is not covered");
+  assert.notEqual(
+    await page.evaluate((s) => document.querySelector(`${s} iframe`).getAttribute("tabindex"), h.ACTIVE),
+    "-1",
+    "the blocked player is keyboard-focusable",
+  );
   // The user taps YouTube's play button: the normal flow resumes.
   await page.evaluate(() => window.__yt.setState(0, 1));
   await h.waitClip(page, "playing");
