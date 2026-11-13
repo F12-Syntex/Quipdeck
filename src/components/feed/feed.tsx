@@ -1,16 +1,19 @@
 "use client";
 
-import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
+import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { flushSync } from "react-dom";
 import { cards, type WitCard as WitCardData } from "@/content";
 import { WitCard } from "@/components/card/wit-card";
 import { LiveRegion } from "@/components/card/live-region";
 import { toggleSaveAndAnnounce } from "@/components/card/heart-button";
 import { toggleMuteAndAnnounce } from "@/components/card/mute-button";
+import { Skeleton } from "@/components/ui/skeleton";
+import { scrollBehavior } from "@/components/ui/motion";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useActiveId, useVisitOrder, visit } from "@/lib/visit-store";
 import { FeedChrome } from "./feed-chrome";
 import { FeedSlide } from "./feed-slide";
+import { createWheelPager } from "./wheel-pager";
 
 const byId = new Map<string, WitCardData>(cards.map((c) => [c.id, c]));
 
@@ -27,6 +30,12 @@ const NATIVE_ACTIVATION =
 /** Settle time after which a key-driven navigation stops owning `activeId`. */
 const PENDING_TIMEOUT_MS = 1200;
 
+/**
+ * Wheel paging applies wherever a fine pointer exists (D-FEED-11). Touch
+ * never produces wheel events, so touch scrolling stays native.
+ */
+const FINE_POINTER = "(any-pointer: fine)";
+
 function prefersReducedMotion(): boolean {
   return window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 }
@@ -35,6 +44,29 @@ function isTypingTarget(target: EventTarget | null): boolean {
   if (!(target instanceof HTMLElement)) return false;
   if (target.isContentEditable) return true;
   return target.closest('input, textarea, select, [contenteditable=""], [contenteditable="true"]') !== null;
+}
+
+/** An element between `target` and the feed that can still scroll that way. */
+function innerScrollerCanMove(
+  target: EventTarget | null,
+  feed: HTMLElement,
+  direction: 1 | -1,
+): boolean {
+  let el = target instanceof Element ? target : null;
+  while (el && el !== feed) {
+    if (el instanceof HTMLElement && el.scrollHeight > el.clientHeight + 1) {
+      const { overflowY } = getComputedStyle(el);
+      if (overflowY === "auto" || overflowY === "scroll") {
+        const canMove =
+          direction > 0
+            ? el.scrollTop + el.clientHeight < el.scrollHeight - 1
+            : el.scrollTop > 0;
+        if (canMove) return true;
+      }
+    }
+    el = el.parentElement;
+  }
+  return false;
 }
 
 function isDialogOpen(): boolean {
@@ -60,6 +92,8 @@ export function Feed() {
   // Until the observer reports, the first card is the active one.
   const activeId = storedActiveId ?? ids?.[0] ?? null;
   const showChrome = useMediaQuery(DESKTOP_POINTER);
+  /** The key hints have done their job once a feed key has been used. */
+  const [keysUsed, setKeysUsed] = useState(false);
 
   const scrollerRef = useRef<HTMLDivElement>(null);
   /** Target of a key or button navigation still scrolling into place. */
@@ -89,12 +123,15 @@ export function Feed() {
     pendingRef.current = null;
   }, []);
 
-  /** Move by `delta` cards. Keys also move focus to the new card (D-FEED-8). */
+  /**
+   * Move by `delta` cards. Keys also move focus to the new card (D-FEED-8).
+   * Returns whether a scroll was started (false at either end of the deck).
+   */
   const go = useCallback(
-    (delta: number, focusCard: boolean) => {
+    (delta: number, focusCard: boolean): boolean => {
       const scroller = scrollerRef.current;
       const all = slides();
-      if (!scroller || all.length === 0) return;
+      if (!scroller || all.length === 0) return false;
       const current =
         pendingRef.current ?? visit.getActiveId() ?? all[0].dataset.slideId;
       const index = Math.max(
@@ -103,7 +140,7 @@ export function Feed() {
       );
       const target = all[Math.min(all.length - 1, Math.max(0, index + delta))];
       const id = target.dataset.slideId;
-      if (!id || id === current) return;
+      if (!id || id === current) return false;
 
       pendingRef.current = id;
       window.clearTimeout(pendingTimerRef.current);
@@ -117,11 +154,12 @@ export function Feed() {
       flushSync(() => visit.setActive(id));
       scroller.scrollTo({
         top: target.offsetTop,
-        behavior: prefersReducedMotion() ? "instant" : "smooth",
+        behavior: scrollBehavior(prefersReducedMotion()),
       });
       if (focusCard) {
         target.querySelector<HTMLElement>(CARD)?.focus({ preventScroll: true });
       }
+      return true;
     },
     [slides, nearestSlideId],
   );
@@ -169,18 +207,42 @@ export function Feed() {
       }
       visit.setActive(id);
     };
-    // A wheel or touch hands control back to the observer.
-    scroller.addEventListener("wheel", releasePending, { passive: true });
+    // A touch (or a native wheel, see below) hands control back to the observer.
     scroller.addEventListener("touchstart", releasePending, { passive: true });
     scroller.addEventListener("scrollend", onScrollEnd);
     return () => {
       observer.disconnect();
-      scroller.removeEventListener("wheel", releasePending);
       scroller.removeEventListener("touchstart", releasePending);
       scroller.removeEventListener("scrollend", onScrollEnd);
       releasePending();
     };
   }, [order, slides, nearestSlideId, releasePending]);
+
+  // Wheel paging (D-FEED-11): one notch or one trackpad flick, one card.
+  // On the document so a wheel over the nav or the desktop chrome pages too;
+  // registered here so Activity removes it while the feed is hidden.
+  useEffect(() => {
+    const scroller = scrollerRef.current;
+    if (!scroller || !order) return;
+    const finePointer = window.matchMedia(FINE_POINTER);
+    const pager = createWheelPager<WheelEvent>({
+      page: (direction) => go(direction, false),
+      passThrough: (event, direction) =>
+        !finePointer.matches ||
+        isDialogOpen() ||
+        innerScrollerCanMove(event.target, scroller, direction),
+      // A wheel the browser scrolls hands control back to the observer.
+      onNative: releasePending,
+      pageHeightPx: () => scroller.clientHeight,
+    });
+    document.addEventListener("wheel", pager.onWheel, { passive: false });
+    scroller.addEventListener("scrollend", pager.settled);
+    return () => {
+      document.removeEventListener("wheel", pager.onWheel);
+      scroller.removeEventListener("scrollend", pager.settled);
+      pager.dispose();
+    };
+  }, [order, go, releasePending]);
 
   // Keyboard map (D-FEED-7). Registered here so Activity removes it.
   useEffect(() => {
@@ -198,11 +260,13 @@ export function Feed() {
         case "ArrowDown":
         case "j":
           event.preventDefault();
+          setKeysUsed(true);
           go(1, true);
           return;
         case "ArrowUp":
         case "k":
           event.preventDefault();
+          setKeysUsed(true);
           go(-1, true);
           return;
         case " ":
@@ -213,6 +277,7 @@ export function Feed() {
           const id = card?.dataset.cardId;
           if (!id) return;
           event.preventDefault();
+          setKeysUsed(true);
           visit.toggleFlip(id);
           return;
         }
@@ -222,6 +287,7 @@ export function Feed() {
           const id = card?.dataset.cardId;
           if (!id || card.dataset.face !== "back") return;
           event.preventDefault();
+          setKeysUsed(true);
           toggleSaveAndAnnounce(id);
           return;
         }
@@ -231,6 +297,7 @@ export function Feed() {
           const clip = card.querySelector<HTMLElement>('[data-testid="clip"]');
           if (clip?.dataset.clipState === "error") return;
           event.preventDefault();
+          setKeysUsed(true);
           toggleMuteAndAnnounce();
           return;
         }
@@ -271,15 +338,20 @@ export function Feed() {
       >
         {ids === null ? (
           <FeedSlide>
+            {/* Painted glass like a card face (D-FLIP-2); bars, never text. */}
             <div
               data-testid="feed-skeleton"
               aria-hidden="true"
-              className="h-full w-full border border-neutral-700"
-            />
+              className="relative flex h-full w-full flex-col justify-center gap-3 rounded-card p-6 pb-[18%] glass-paint glass-rim lg:rounded-stage lg:p-14 lg:pb-[12%]"
+            >
+              <Skeleton className="h-8 w-4/5 rounded-pill lg:h-12 lg:w-[46%]" />
+              <Skeleton className="h-8 w-3/5 rounded-pill lg:h-12 lg:w-[34%]" />
+              <Skeleton className="mt-2 h-4 w-2/5 rounded-pill lg:mt-4 lg:w-[18%]" />
+            </div>
           </FeedSlide>
         ) : ids.length === 0 ? (
-          <div className="flex h-dvh items-center justify-center">
-            <p>No cards yet.</p>
+          <div className="flex h-dvh items-center justify-center px-6">
+            <p className="text-body text-fg-secondary">No cards yet.</p>
           </div>
         ) : (
           ids.map((id) => (
@@ -296,6 +368,7 @@ export function Feed() {
           canNext={ids !== null && activeIndex > -1 && activeIndex < ids.length - 1}
           onPrev={() => go(-1, false)}
           onNext={() => go(1, false)}
+          hintsFaded={keysUsed}
         />
       ) : null}
     </>
