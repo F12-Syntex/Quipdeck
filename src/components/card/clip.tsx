@@ -28,11 +28,11 @@ export type ClipState = "idle" | ClipControllerState;
 export const CLIP_SETTLE_MS = 150;
 
 /**
- * Clip box (D-CLIP-1..9). Styled in P4-3: `rounded-clip` frame, hue wash
- * behind the player, shimmer while loading, fade-in when ready. The corner
- * radius is 0.6 x `--radius-clip` (12 px): CL-19 hit-tests 4 px inside each
- * corner, which a 20 px clip radius would fall outside of.
- * The box keeps one footprint in every state (16:9, at least 200 px tall).
+ * Clip box (D-CLIP-1..9). Styled in P4-3: `rounded-clip` frame (20 px,
+ * D-CLIP-13), hue wash behind the player, shimmer while loading, fade-in
+ * when ready. The box keeps one footprint in every state (16:9, at least
+ * 200 px tall). `data-base-ui-swipe-ignore` keeps a drag that starts on the
+ * clip from dismissing the Saved drawer (D-SAVED-8); it is inert elsewhere.
  * The player lives in `mountRef`, which React never renders children into;
  * the skeleton sits behind it and the fallback replaces it on error.
  */
@@ -101,7 +101,8 @@ export function Clip({ clip, title, active }: ClipProps) {
       data-testid="clip"
       data-clip-state={state}
       data-no-flip=""
-      className="relative isolate aspect-video min-h-[200px] w-full overflow-hidden rounded-[calc(var(--radius-clip)*0.6)] border border-hairline bg-[oklch(0.14_0.02_var(--move-hue))]"
+      data-base-ui-swipe-ignore=""
+      className="relative isolate aspect-video min-h-[200px] w-full overflow-hidden rounded-clip border border-hairline bg-[oklch(0.14_0.02_var(--move-hue))]"
     >
       {/* Hue wash (idle, loading, error): sits behind the player and is never
           drawn over it. Uses only the move-hue glow tokens and the specular

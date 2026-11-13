@@ -511,19 +511,31 @@ test("CL-19 nothing overlaps the player", async () => {
   const { page } = await open();
   await startHealthy(page, 0);
   await flipAndPlay(page);
+  // D-CLIP-13: the frame is rounded, so corner probes sit inside the curve:
+  // inset by radius x (1 - 1/sqrt 2) + 4 px. Edge midpoints are probed too.
   const result = await page.evaluate((s) => {
     const f = document.querySelector(`${s} iframe`);
+    const frame = document.querySelector(`${s} [data-testid="clip"]`);
+    const radius = parseFloat(getComputedStyle(frame).borderTopLeftRadius) || 0;
+    const d = radius * (1 - Math.SQRT1_2) + 4;
     const r = f.getBoundingClientRect();
+    const cx = r.left + r.width / 2;
+    const cy = r.top + r.height / 2;
     const pts = [
-      [r.left + r.width / 2, r.top + r.height / 2],
-      [r.left + 4, r.top + 4],
-      [r.right - 4, r.top + 4],
-      [r.left + 4, r.bottom - 4],
-      [r.right - 4, r.bottom - 4],
+      [cx, cy],
+      [cx, r.top + 4],
+      [cx, r.bottom - 4],
+      [r.left + 4, cy],
+      [r.right - 4, cy],
+      [r.left + d, r.top + d],
+      [r.right - d, r.top + d],
+      [r.left + d, r.bottom - d],
+      [r.right - d, r.bottom - d],
     ];
-    return pts.map(([x, y]) => document.elementFromPoint(x, y) === f);
+    return { radius, hits: pts.map(([x, y]) => document.elementFromPoint(x, y) === f) };
   }, ACTIVE);
-  assert.deepEqual(result, [true, true, true, true, true]);
+  assert.ok(result.radius >= 20, `clip radius ${result.radius}`);
+  assert.deepEqual(result.hits, Array(9).fill(true));
 });
 
 test("CL-20 shortcuts still work after clicking inside the clip", async () => {
