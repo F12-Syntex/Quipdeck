@@ -325,11 +325,9 @@ test("FD-2 one touch swipe moves exactly one card (phone)", async () => {
   assert.equal(to - from, 1);
 });
 
-// KNOWN GAP (reported at Gate 1): Chromium ignores scroll-snap-stop for a
-// single synthetic 3000 px wheel delta (or 30 x 100 px in 300 ms), so it
-// crosses three cards even though every slide has `scroll-snap-stop: always`.
-// CSS cannot fix it; it needs a script clamp, which P1-6 may not add.
-test("FD-2x a 3000 px wheel burst moves at most one card", { todo: true }, async () => {
+// D-FEED-11: a wheel handler on fine pointers pages exactly one card per
+// gesture, so a burst that Chromium would carry across cards stops at one.
+test("FD-2x a 3000 px wheel burst moves exactly one card", async () => {
   const { page } = await open({ device: DESKTOP });
   const order = await domOrder(page);
   const from = order.indexOf(await activeId(page));
@@ -338,7 +336,21 @@ test("FD-2x a 3000 px wheel burst moves at most one card", { todo: true }, async
   await page.waitForTimeout(1200);
   await settled(page);
   const to = order.indexOf(await activeId(page));
-  assert.ok(to - from <= 1, `moved ${to - from} cards`);
+  assert.equal(to - from, 1, `moved ${to - from} cards`);
+});
+
+test("FD-2x a single 120 px wheel notch moves exactly one card", async () => {
+  const { page } = await open({ device: DESKTOP });
+  const order = await domOrder(page);
+  const from = order.indexOf(await activeId(page));
+  await page.mouse.move(720, 450);
+  await page.mouse.wheel(0, 120);
+  await page.waitForTimeout(1200);
+  await settled(page);
+  const to = order.indexOf(await activeId(page));
+  assert.equal(to - from, 1);
+  const rem = await scrollRem(page);
+  assert.ok(rem <= 1 || rem >= 899, `scrollTop % innerHeight was ${rem}`);
 });
 
 // =====================================================================
