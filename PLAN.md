@@ -213,4 +213,5 @@ GATE 4 -> { P5-1 | P5-2 } -> P5-3 -> FINAL GATE
 | Gate 1 | APPROVED (see docs/gates/GATES.md for carry-overs) |
 | P2-1, P2-2, P2-3 | done |
 | Gate 2 | VETO 1, then APPROVED on re-review (depends on P2-4) |
+| P2-4, P3-1 | done |
 | Known flake | KB-4 (M-mute, goToCard timeout) failed once in P2-2 and passed on the lead's re-run. P5-1 hardens it. |

@@ -284,3 +284,5 @@ Nothing below ships. Each was considered and rejected; items marked (board) were
 **D-FEED-11. Wheel paging (lead, after P1-6).** CSS `scroll-snap-stop: always` does not stop Chromium skipping cards on a large wheel delta, and a single 100-120 px notch snaps back to the same card. The feed gets a JS wheel handler on pointer-fine devices: accumulate `deltaY` to about 40 px, move one card, then ignore wheel input until scrolling settles. Touch scrolling is untouched. Owned by P4-4.
 
 **D-THEME-6. Hue crossfade under reduced motion (lead, after P2-1).** Keep the 400 ms opacity crossfade of the move hue. It is a colour change with no movement, so it is allowed under reduced motion and is gentler than a hard swap.
+
+**D-SAVED-8. Detail sheet uses the Base UI Drawer (lead, after P3-1).** Adopt the fetched Drawer (21st id 24837) native swipe-to-dismiss in place of the hand-built grabber drag. P3-2 ports it to `src/components/ui/drawer.tsx` on our tokens. P4-5 switches `detail-sheet.tsx` to it and keeps every existing test hook (`sheet-grabber`, roles, focus return).
