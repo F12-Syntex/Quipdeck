@@ -30,7 +30,7 @@ There is no scaffold tier in this swarm.
 9. Report format, 150 words maximum, no code:
    `STATUS / TASKS / FILES / CHECKS: <command> -> pass|fail / DEVIATIONS / QUESTIONS`
 
-**QG** (quality gate, used in acceptance checks) = `npm run lint && npx tsc --noEmit && npm test && npm run build`, all passing.
+**QG** (quality gate, used in acceptance checks) = `npm run lint && npx next typegen && npx tsc --noEmit && npm test && npm run build`, all passing.
 
 ## Contracts (fixed by P1-1; lanes build against them)
 
@@ -209,4 +209,4 @@ GATE 4 -> { P5-1 | P5-2 } -> P5-3 -> FINAL GATE
 
 | Task | Status |
 |---|---|
-| T0, T1, PLAN | done |
+| T0, T1, PLAN, P1-1, P1-2 | done |
