@@ -7,7 +7,9 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "vitest run"
+    "test": "vitest run",
+    "e2e": "node --test --test-reporter=spec \"e2e/*.test.cjs\"",
+    "shots": "node scripts/shots.cjs"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",

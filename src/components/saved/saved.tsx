@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { LiveRegion } from "@/components/card/live-region";
 import { cards, groupByMove, searchCards, type WitCard } from "@/content";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useSavedIds } from "@/lib/saves-store";
@@ -212,6 +213,7 @@ export function Saved() {
   return (
     <>
       {saved.length === 0 && paneId === null ? emptyBody : listBody}
+      <LiveRegion />
       {desktop ? null : (
         <DetailSheet
           cardId={sheetId}
