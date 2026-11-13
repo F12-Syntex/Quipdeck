@@ -17,8 +17,8 @@ Screens use the tokens below, not raw colours. A lane that needs a new token or 
 | `--surface-base` | `oklch(0.165 0.006 270)` = `#0d0e11` | Page canvas (on `<html>`), `themeColor`, `bg-background` | Every route; Saved sticky search backing until P4-5 |
 | `--surface-base-top` / `--surface-base-bottom` | `oklch(0.19 …)` / `oklch(0.135 …)` | Barely perceptible vertical gradient of the ambient base | Ambient layer |
 | `--surface-raised` | `oklch(0.235 0.008 270)` | Solid raised fill; shadcn `--card`, `--sidebar` | Fallback fills |
-| `--surface-scrim` | `oklch(0.08 0.004 270 / 0.6)` | Dims the page behind a modal | Sheet and dialog backdrop |
-| `--hairline` | white 10% | Dividers, `border-border` | Saved row dividers, dialog footer |
+| `--surface-scrim` | `oklch(0.08 0.004 270 / 0.6)` | Dims the page behind a modal | Drawer (detail sheet) backdrop |
+| `--hairline` | white 10% | Dividers, `border-border` | Saved row dividers |
 
 Utilities: `bg-surface-base`, `bg-surface-raised`, `bg-surface-scrim`, `border-hairline`.
 
@@ -63,7 +63,7 @@ All are Tailwind utilities defined with `@utility` in `globals.css` and always e
 | `glass-paint` | Painted glass. Translucent fill (white 6% at the top to 3%) over a light shade tinted by the hue (`--glass-shade`, `oklch(0.14 0.03 h / 0.14)`), so the glow reads through the face. Also a top-left specular wash (`--glass-specular`, white 12%), an inset hairline edge, a faint bottom rim (`--glass-rim-low`), and a deep shadow tinted by `--hue-shadow`. The bright rim comes from `glass-rim`, and card faces always use both. **No `backdrop-filter`.** The ambient layer is all soft gradients, so unblurred glass over it reads as frosted. Looks the same at every angle in every browser. | Rotating card faces (front and back), the skeleton card (D-FLIP-2) |
 | `glass-rim` | Refraction rim: a 1 px ring drawn with a masked `::before`. It is lit from the top-left corner only (`--glass-rim`, white 32%) and fades along the top and left edges by about 70%, with a faint catch at the bottom-right (`--glass-rim-low`). Needs a positioned element (`relative` or `absolute`). Uses `::before`. | Card faces with `glass-paint`; optionally the nav pill |
 | `glass-chrome` | Blurred glass: `--chrome-fill` (62%), `blur(24px) saturate(1.4)`, top highlight (`--chrome-rim`, white 20%, unchanged at Gate 2), hairline, soft shadow. Falls back to `--chrome-fill-solid` under `@supports not (backdrop-filter)` and `prefers-reduced-transparency: reduce`. | Chrome that never rotates: nav pill, sticky search (`Input variant="chrome"`), desktop previous / next |
-| `glass-chrome-strong` | Same, more opaque (82%), 32 px blur, upward shadow. Same fallbacks. | Bottom sheet, desktop detail pane, dialog |
+| `glass-chrome-strong` | Same, more opaque (82%), 32 px blur, upward shadow. Same fallbacks. | Bottom sheet (Drawer), desktop detail pane |
 | `glass-control` | Small translucent control: white 8% fill, rim, hairline. No blur. | Heart, mute, the field variant of `Input`, `Button variant="glass"` |
 | `glass-bubble` | Neutral bubble: white 7%, rim, hairline. | Trigger line (other speaker) |
 | `hue-bubble` | Response bubble tinted by the move hue: `oklch(0.58 0.14 h / 0.24)`, rim, hue hairline `oklch(0.8 0.11 h / 0.22)`. | Response line (the witty one) |
@@ -118,9 +118,9 @@ Under reduced motion the drift is `animation: none`. The hue still changes, as a
 
 | Token / utility | Value | Used by |
 |---|---|---|
-| `rounded-card` | 32 px | Phone card faces, skeleton card, dialog |
+| `rounded-card` | 32 px | Phone card faces, skeleton card |
 | `rounded-stage` | 40 px | Desktop landscape card |
-| `rounded-sheet` | 32 px (top corners) | Bottom sheet (`SheetContent side="bottom"`) |
+| `rounded-sheet` | 32 px (top corners) | Bottom sheet (`DrawerPopup`, `rounded-t-sheet`) |
 | `rounded-pane` | 32 px | Desktop detail pane |
 | `rounded-group` | 24 px | Saved grouped list |
 | `rounded-bubble` | 20 px | Dialogue bubbles |
@@ -156,8 +156,8 @@ CSS (`globals.css`) and JS (`src/components/ui/motion.ts`) carry the same values
 | `heartPop`, `heartScale` (JS) | 1 to 1.18 to 1, 300 ms tween (`times` 0 / 0.4 / 1, `ease-soft`), on save only | state change only | Heart fill (`HeartToggle`). Replaces the P2 `heartSpring`: framer-motion springs take two keyframes only. |
 | `capsuleSpring` (JS) | spring, stiffness 420, damping 42: critically damped, about 300 ms | instant | Nav active capsule slide (`NavPill`) |
 | `--dur-fast` | 150 ms | 150 ms (colour only) | Button and field hover, press |
-| `--dur-base` | 240 ms | 0 | Dialog, generic fades |
-| `--dur-sheet` | 280 ms, `ease-soft` | 0 (opacity only, no rise) | Sheet and Drawer rise and backdrop; a Drawer released after a swipe finishes in `--drawer-swipe-strength` x `--dur-sheet` |
+| `--dur-base` | 240 ms | 0 | Generic fades (key hints) |
+| `--dur-sheet` | 280 ms, `ease-soft` | 0 (opacity only, no rise) | Drawer rise and backdrop; a Drawer released after a swipe finishes in `--drawer-swipe-strength` x `--dur-sheet` |
 | `--dur-crossfade` | 150 ms | 150 ms | Flip crossfade (CSS twin) |
 | `--dur-ready` / `animate-ready-fade` | 320 ms opacity | 0 | Clip fades in when ready (P4-3) |
 | `--dur-hue` | 1400 ms, `ease-glide` | 400 ms | Ambient and shadow hue crossfade |
@@ -182,11 +182,9 @@ Pressed buttons scale to 0.97; under reduced motion they do not scale. Reduced m
 | `Badge` | `move` (26 px `hue-tag` pill), `glass` | Card back move tag; Saved group label if a pill is wanted |
 | `Input` | `variant="field"` (default, `glass-control` pill, 48 px, no blur), `variant="chrome"` (blurred). The blur makes the field a stacking context, so a leading icon drawn before it needs `z-10`. | Saved search |
 | `Skeleton` | Faint glass fill with a slow shimmer, stopped under reduced motion | Feed skeleton card, Saved skeleton rows, clip loading |
-| `Drawer` (P3-2, from 21st.dev 24837; D-SAVED-8) | Bottom-only Base UI Drawer: `Drawer`, `DrawerTrigger`, `DrawerPopup` (portal, `--surface-scrim` backdrop with no blur, viewport and the `glass-chrome-strong` `rounded-t-sheet` panel in one; max 92dvh; takes `finalFocus` / `initialFocus`), `DrawerContent` (the scrolling body; swipe-to-dismiss waits until it is at the top), `DrawerHandle` (32 px strip with the 36 x 5 pill; takes `data-testid`), `DrawerTitle`, `DrawerDescription`, `DrawerClose`. Native swipe-to-dismiss: the panel follows the finger, the scrim fades with `--drawer-swipe-progress`. Rise and fade use `--dur-sheet` / `ease-soft`, instant under reduced motion. `data-base-ui-swipe-ignore` on a child opts it out of the swipe. `drawerSurfaceClassName` draws the panel inline (showcase). | Phone detail sheet (P4-5 switches `detail-sheet.tsx` to it) |
+| `Drawer` (P3-2, from 21st.dev 24837; D-SAVED-8) | Bottom-only Base UI Drawer: `Drawer`, `DrawerTrigger`, `DrawerPopup` (portal, `--surface-scrim` backdrop with no blur, viewport and the `glass-chrome-strong` `rounded-t-sheet` panel in one; max 92dvh; takes `finalFocus` / `initialFocus`), `DrawerContent` (the scrolling body; swipe-to-dismiss waits until it is at the top), `DrawerHandle` (32 px strip with the 36 x 5 pill; takes `data-testid`), `DrawerTitle`, `DrawerDescription`, `DrawerClose`. Native swipe-to-dismiss: the panel follows the finger, the scrim fades with `--drawer-swipe-progress`. Rise and fade use `--dur-sheet` / `ease-soft`, instant under reduced motion. `data-base-ui-swipe-ignore` on a child opts it out of the swipe. `drawerSurfaceClassName` draws the panel inline (showcase). | Phone detail sheet (`detail-sheet.tsx`, P4-5). The only sheet primitive: `Sheet`, `SheetGrabber` and `Dialog` were deleted in P4-6 (Gate 3 carry-over). |
 | `NavPill`, `NavPillItem` (P3-2, from 21st.dev 8343) | `glass-chrome` 52 px pill; items are 44 px, `text-label`, `--fg-secondary`, `--fg-primary` when `active`. The active item has a `--control-active` capsule that slides to the new item (`capsuleSpring`, shared layout, scoped per pill), instant under reduced motion. Focus ring, 0.97 press. Items render any element through `render` (Base UI `useRender`), e.g. `render={<Link href="/saved" />}`. The caller owns the `nav` label, `aria-current` and placement. | `AppNav` (P4-1) |
 | `HeartToggle` (P3-2, from 21st.dev 10627) | Base UI `Toggle` drawn as `Button variant="glass" size="circle"` (44 px): `aria-pressed`, fixed label (default "Save"), heart filled with `--fg-primary` when pressed. Pops to 1.18 once on save (`heartPop`): on press, and when controlled on any false-to-true change of `pressed` (so a save by the S key pops too). Never on unsave, never on mount, not under reduced motion. Controlled (`pressed`, `onPressedChange`) or not; passes `data-testid` and other props to the button. | Card back heart (P4-2), detail heart (P4-5) |
-| `Sheet` | Popup is `glass-chrome-strong` with `rounded-t-sheet` (bottom), `--surface-scrim` backdrop, 280 ms soft rise (opacity only under reduced motion). Built-in close is a glass circle. New `SheetGrabber` (36 x 5 px pill). `data-slot`s and the transform transition the drag relies on are unchanged. | Phone detail sheet until P4-5 moves it to `Drawer`; kept because `detail-sheet.tsx` still uses it |
-| `Dialog` | `glass-chrome-strong`, `rounded-card`, scrim backdrop, subtle 0.98 zoom (none under reduced motion) | Not used by screens yet |
 | `AmbientLayer` | (new) | Root layout |
 | `motion.ts` | (new; P3-2 added `heartPop`, `capsuleSpring`) | Card flip, heart, nav capsule, sweep, keyboard scroll |
 

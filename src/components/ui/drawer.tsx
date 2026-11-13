@@ -146,8 +146,8 @@ function DrawerContent({
 }
 
 /**
- * Grabber strip: a 32 px tall touch row with the 36 x 5 pill (the same
- * pill as SheetGrabber). Decorative; the whole popup is swipeable. Takes
+ * Grabber strip: a 32 px tall touch row with the 36 x 5 grabber
+ * pill). Decorative; the whole popup is swipeable. Takes
  * `data-testid` and other props.
  */
 function DrawerHandle({ className, ...props }: React.ComponentProps<"div">) {

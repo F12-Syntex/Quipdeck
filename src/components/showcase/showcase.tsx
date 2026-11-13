@@ -4,12 +4,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SheetGrabber } from "@/components/ui/sheet";
 import { cards, getMove } from "@/content";
 import { MOVE_HUE_RING, MOVE_HUES, moveHue, moveHueStyle } from "@/lib/move-hue";
 import { LibraryDemos } from "./library-demos";
 import { MotionDemos } from "./motion-demos";
-import { OverlayDemos } from "./overlay-demos";
 
 /*
  * Showcase (R-6, P2-2). Built only from the tokens in globals.css and the
@@ -143,7 +141,7 @@ function Tokens() {
           {[
             ["glass-paint glass-rim", "glass-paint glass-rim relative", "Rotating card faces"],
             ["glass-chrome", "glass-chrome", "Nav pill, search, prev / next"],
-            ["glass-chrome-strong", "glass-chrome-strong", "Sheet, pane, dialog"],
+            ["glass-chrome-strong", "glass-chrome-strong", "Drawer (sheet), pane"],
             ["glass-control", "glass-control", "Heart, mute, field"],
             ["glass-bubble", "glass-bubble", "Trigger line"],
             ["hue-bubble", "hue-bubble", "Response line"],
@@ -212,7 +210,7 @@ function Tokens() {
       <Section
         id="motion"
         title="Motion"
-        note="Live demos. Under prefers-reduced-motion the flip becomes a 150 ms crossfade, the heart only changes state, the pulse, shimmer and drift stop, and the hue still fades (400 ms, no movement). Sheet rise and the ready fade drop to opacity or nothing."
+        note="Live demos. Under prefers-reduced-motion the flip becomes a 150 ms crossfade, the heart only changes state, the pulse, shimmer and drift stop, and the hue still fades (400 ms, no movement). Drawer rise and the ready fade drop to opacity or nothing."
       >
         <MotionDemos />
       </Section>
@@ -414,16 +412,6 @@ function Primitives() {
           <Skeleton className="h-6 w-2/3" />
           <Skeleton className="h-16 w-full rounded-clip" />
           <Skeleton className="h-4 w-1/3" />
-        </div>
-      </Section>
-
-      <Section id="overlays" title="Sheet and Dialog" note="Modal, so they open on press. The sheet grabber is shown inline below.">
-        <div className="flex flex-col gap-4">
-          <div className="glass-chrome-strong flex flex-col items-center gap-3 rounded-sheet p-4">
-            <SheetGrabber />
-            <Caption>SheetGrabber, 36 x 5</Caption>
-          </div>
-          <OverlayDemos />
         </div>
       </Section>
     </>

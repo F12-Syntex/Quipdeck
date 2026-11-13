@@ -17,7 +17,7 @@
 
 ## Folders
 - `src/app/` routes, layout, globals.css
-- `src/components/ui/` shadcn primitives: button, sheet, dialog, tabs, scroll-area, badge, tooltip, sonner, skeleton, separator
+- `src/components/ui/` shadcn primitives: button, drawer (the one sheet primitive; sheet and dialog deleted in P4-6), tabs, scroll-area, badge, tooltip, sonner, skeleton, separator
 - `src/lib/utils.ts` (`cn`), `src/hooks/` alias target
 - Add more: `npx shadcn@latest add <name> -y`
 - Wrap app in `TooltipProvider` (and mount `<Toaster />` from `@/components/ui/sonner`) in the layout when used; T0 did not wire them.
