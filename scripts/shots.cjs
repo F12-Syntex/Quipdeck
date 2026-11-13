@@ -2,8 +2,9 @@
 "use strict";
 /*
  * Gate screenshots: `npm run shots -- <phase>` writes 8 states x 3 viewports
- * (24 PNGs) plus the showcase (2 PNGs) and the saved-bottom phone shot
- * (1 PNG) to docs/gates/<phase>/. Builds once and serves with `next start`.
+ * (24 PNGs) plus the showcase (2 PNGs), the saved-bottom phone shot
+ * (1 PNG) and the showcase card-mock frames (front and back in two move
+ * hues, viewport height, phone and desktop: 8 PNGs) to docs/gates/<phase>/. Builds once and serves with `next start`.
  * The YouTube IFrame API is the stub (D-TEST-2), so a healthy clip is a
  * labelled frame; the fallback shot uses the seeded broken card.
  * Set E2E_SKIP_BUILD=1 to reuse an existing build.
@@ -191,14 +192,28 @@ async function main() {
       await page.screenshot({ path: file, fullPage: true });
       written.push(file);
       console.log("wrote", path.relative(ROOT, file));
+      // Card mock frames (Gate 2 fix 4): one viewport each, over the glow.
+      const frames = await page.$$eval("[data-mock-frame]", (els) =>
+        els.map((e) => e.getAttribute("data-mock-frame")),
+      );
+      if (frames.length !== 4) throw new Error("expected 4 card-mock frames, found " + frames.length);
+      for (const name of frames) {
+        const frame = page.locator(`[data-mock-frame="${name}"]`);
+        await frame.scrollIntoViewIfNeeded();
+        await page.waitForTimeout(150);
+        const mockFile = path.join(outDir, `card-mock-${name}-${vp.name}.png`);
+        await frame.screenshot({ path: mockFile });
+        written.push(mockFile);
+        console.log("wrote", path.relative(ROOT, mockFile));
+      }
       await ctx.close();
     }
   } finally {
     await browser.close();
     await server.stop();
   }
-  if (written.length !== 27) {
-    console.error(`expected 27 PNGs, wrote ${written.length}`);
+  if (written.length !== 35) {
+    console.error(`expected 35 PNGs, wrote ${written.length}`);
     process.exit(1);
   }
   console.log(`wrote ${written.length} PNGs to docs/gates/${phase}/ (saved-bottom nav gap ${navGap}px)`);

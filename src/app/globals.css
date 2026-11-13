@@ -12,7 +12,7 @@
 
 /* Always emit the recipe utilities, so screens and the showcase can rely on */
 /* them even before a file in the scan uses them.                           */
-@source inline("glass-paint glass-rim glass-chrome glass-chrome-strong glass-control glass-bubble hue-tag hue-bubble focus-ring skeleton-shimmer text-cue text-cue-stage text-title text-heading text-line text-line-compact text-body text-label text-eyebrow text-caption animate-hint-pulse animate-shimmer animate-ready-fade motion-reduce:animate-none");
+@source inline("glass-paint glass-rim glass-chrome glass-chrome-strong glass-control glass-bubble hue-tag hue-bubble hue-scope focus-ring skeleton-shimmer text-cue text-cue-stage text-title text-heading text-line text-line-compact text-body text-label text-eyebrow text-caption animate-hint-pulse animate-shimmer animate-ready-fade motion-reduce:animate-none");
 
 /* ------------------------------------------------------------------ */
 /* Move hue (D-THEME-3). Screens publish --move-hue on <html>; local   */
@@ -214,21 +214,21 @@
 
   /* Text (contrast pairs in DESIGN_SYSTEM.md) */
   --fg-primary: oklch(0.97 0.003 270);
-  --fg-secondary: oklch(0.85 0.008 270);
-  --fg-tertiary: oklch(0.78 0.01 270);
+  --fg-secondary: oklch(0.88 0.008 270);
+  --fg-tertiary: oklch(0.82 0.01 270);
   --fg-inverse: oklch(0.2 0.01 270);
 
   /* Lines */
   --hairline: oklch(1 0 0 / 0.1);
 
   /* Painted glass: rotating card faces, no backdrop-filter (D-FLIP-2) */
-  --glass-fill-top: oklch(1 0 0 / 0.085);
+  --glass-fill-top: oklch(1 0 0 / 0.06);
   --glass-fill-bottom: oklch(1 0 0 / 0.03);
-  --glass-shade: oklch(0.12 0.006 270 / 0.28);
+  --glass-shade: oklch(0.14 0.03 var(--move-hue) / 0.14);
   --glass-edge: oklch(1 0 0 / 0.1);
-  --glass-rim: oklch(1 0 0 / 0.2);
+  --glass-rim: oklch(1 0 0 / 0.32); /* top-left only (glass-rim) */
   --glass-rim-low: oklch(1 0 0 / 0.04);
-  --glass-specular: oklch(1 0 0 / 0.06);
+  --glass-specular: oklch(1 0 0 / 0.12);
   --specular-sweep: linear-gradient(
     105deg,
     transparent 35%,
@@ -238,6 +238,7 @@
 
   /* Blurred glass: chrome only (nav, search, sheet, pane, prev/next) */
   --chrome-fill: oklch(0.24 0.008 270 / 0.62);
+  --chrome-rim: oklch(1 0 0 / 0.2); /* top highlight on chrome */
   --chrome-fill-strong: oklch(0.22 0.008 270 / 0.82);
   --chrome-fill-solid: oklch(0.235 0.008 270);
   --chrome-blur: 24px;
@@ -259,9 +260,10 @@
   --focus-ring-width: 2px;
   --focus-ring-offset: 2px;
 
-  /* Grain: static SVG turbulence (grey, opaque; layer opacity sets amount) */
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0.33 0.33 0.33 0 0 0 0 0 0 1'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  --grain-opacity: 0.07;
+  /* Grain: static SVG turbulence, grey, contrast-stretched (x4 around mid */
+  /* grey) so soft-light at 14% gives sigma 2 to 3 / 255 on the base.     */
+  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='4' intercept='-1.5'/%3E%3CfeFuncG type='linear' slope='4' intercept='-1.5'/%3E%3CfeFuncB type='linear' slope='4' intercept='-1.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  --grain-opacity: 0.14;
 
   /* Motion (JS twins in src/components/ui/motion.ts) */
   --dur-fast: 150ms;
@@ -344,7 +346,8 @@
     @apply text-foreground;
     background-color: transparent;
   }
-  :focus-visible {
+  :focus-visible,
+  [data-focus-visible] {
     outline: var(--focus-ring-width) solid var(--focus-ring);
     outline-offset: var(--focus-ring-offset);
   }
@@ -359,32 +362,34 @@
 
 /* Clear focus ring for components that reset outline. */
 @utility focus-ring {
-  &:focus-visible {
+  &:focus-visible,
+  &[data-focus-visible] {
     outline: var(--focus-ring-width) solid var(--focus-ring);
     outline-offset: var(--focus-ring-offset);
   }
 }
 
 /* Painted glass for the rotating card faces (D-FLIP-2). No backdrop    */
-/* sampling: a translucent tinted fill, a top specular wash, a hairline */
-/* edge, a top rim highlight and a deep shadow tinted by the move hue.  */
-/* Looks the same at every angle in every browser.                     */
+/* sampling: a translucent fill over a light hue-tinted shade, a        */
+/* top-left specular wash, a hairline edge, a faint bottom rim and a    */
+/* deep shadow tinted by the move hue. The bright rim is glass-rim      */
+/* (card faces always use both). Same at every angle in every browser. */
 @utility glass-paint {
   background-image:
-    radial-gradient(120% 70% at 12% 0%, var(--glass-specular), transparent 60%),
+    radial-gradient(110% 65% at 8% 0%, var(--glass-specular), transparent 62%),
     linear-gradient(180deg, var(--glass-fill-top), var(--glass-fill-bottom)),
     linear-gradient(var(--glass-shade), var(--glass-shade));
   box-shadow:
-    inset 0 1px 0 0 var(--glass-rim),
     inset 0 0 0 1px var(--glass-edge),
     inset 0 -1px 0 0 var(--glass-rim-low),
     0 1px 2px 0 oklch(0 0 0 / 0.3),
     0 40px 90px -30px var(--hue-shadow);
 }
 
-/* Refraction rim: a gradient hairline, bright at the top-left, a faint */
-/* catch at the bottom-right. Needs a positioned element (relative or   */
-/* absolute). Pairs with glass-paint or glass-chrome.                   */
+/* Refraction rim: a 1 px ring lit from the top-left corner only        */
+/* (--glass-rim), fading out along the top and left edges, with a faint */
+/* catch at the bottom-right (--glass-rim-low). Needs a positioned      */
+/* element (relative or absolute). Pairs with glass-paint.              */
 @utility glass-rim {
   &::before {
     content: "";
@@ -393,13 +398,18 @@
     border-radius: inherit;
     padding: 1px;
     pointer-events: none;
-    background: linear-gradient(
-      155deg,
-      oklch(1 0 0 / 0.32) 0%,
-      oklch(1 0 0 / 0.08) 28%,
-      oklch(1 0 0 / 0.03) 60%,
-      oklch(1 0 0 / 0.12) 100%
-    );
+    background:
+      radial-gradient(
+        120% 85% at 0% 0%,
+        var(--glass-rim) 0%,
+        oklch(1 0 0 / 0.1) 38%,
+        transparent 70%
+      ),
+      radial-gradient(
+        90% 70% at 100% 100%,
+        var(--glass-rim-low) 0%,
+        transparent 70%
+      );
     -webkit-mask:
       linear-gradient(#000 0 0) content-box,
       linear-gradient(#000 0 0);
@@ -419,7 +429,7 @@
   -webkit-backdrop-filter: blur(var(--chrome-blur)) saturate(var(--chrome-saturate));
   backdrop-filter: blur(var(--chrome-blur)) saturate(var(--chrome-saturate));
   box-shadow:
-    inset 0 1px 0 0 var(--glass-rim),
+    inset 0 1px 0 0 var(--chrome-rim),
     inset 0 0 0 1px var(--glass-edge),
     0 16px 40px -16px oklch(0 0 0 / 0.6);
 
@@ -439,7 +449,7 @@
   -webkit-backdrop-filter: blur(32px) saturate(var(--chrome-saturate));
   backdrop-filter: blur(32px) saturate(var(--chrome-saturate));
   box-shadow:
-    inset 0 1px 0 0 var(--glass-rim),
+    inset 0 1px 0 0 var(--chrome-rim),
     inset 0 0 0 1px var(--glass-edge),
     0 -12px 48px -12px oklch(0 0 0 / 0.55);
 
@@ -464,16 +474,27 @@
 /* Hue tints (D-THEME-3). Computed where used, so a local --move-hue   */
 /* (moveHueStyle) tints that element only.                             */
 @utility hue-tag {
-  background-color: oklch(0.62 0.11 var(--move-hue) / 0.16);
-  color: oklch(0.9 0.05 var(--move-hue));
-  box-shadow: inset 0 0 0 1px oklch(0.78 0.09 var(--move-hue) / 0.28);
+  background-color: oklch(0.62 0.14 var(--move-hue) / 0.16);
+  color: oklch(0.9 0.06 var(--move-hue));
+  box-shadow: inset 0 0 0 1px oklch(0.78 0.12 var(--move-hue) / 0.3);
 }
 
 @utility hue-bubble {
-  background-color: oklch(0.58 0.1 var(--move-hue) / 0.24);
+  background-color: oklch(0.58 0.14 var(--move-hue) / 0.24);
   box-shadow:
     inset 0 1px 0 0 oklch(1 0 0 / 0.1),
-    inset 0 0 0 1px oklch(0.8 0.08 var(--move-hue) / 0.2);
+    inset 0 0 0 1px oklch(0.8 0.11 var(--move-hue) / 0.22);
+}
+
+/* Re-derive every hue-based token on this element, so a local         */
+/* --move-hue (moveHueStyle) also retints glass shade, card shadow,      */
+/* glow and focus ring. Same formulas as :root; keep them in step.      */
+@utility hue-scope {
+  --glass-shade: oklch(0.14 0.03 var(--move-hue) / 0.14);
+  --hue-glow: oklch(0.44 0.12 var(--move-hue) / 0.42);
+  --hue-glow-soft: oklch(0.36 0.07 var(--move-hue) / 0.3);
+  --hue-shadow: oklch(0.2 0.06 var(--move-hue) / 0.7);
+  --focus-ring: oklch(0.9 0.06 var(--move-hue));
 }
 
 /* Neutral bubble (trigger line, the other speaker). */
@@ -514,6 +535,27 @@
     var(--surface-base) 45%,
     var(--surface-base-bottom) 100%
   );
+}
+
+/* A local, in-flow copy of the ambient base for demos (showcase card    */
+/* frames). Put .ambient-glow / -vignette / -grain inside; pair with     */
+/* hue-scope and moveHueStyle to light it in another hue.              */
+.ambient-frame {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  background: linear-gradient(
+    180deg,
+    var(--surface-base-top) 0%,
+    var(--surface-base) 45%,
+    var(--surface-base-bottom) 100%
+  );
+}
+
+.ambient-frame > .ambient-glow,
+.ambient-frame > .ambient-vignette,
+.ambient-frame > .ambient-grain {
+  z-index: -1;
 }
 
 .ambient-glow {

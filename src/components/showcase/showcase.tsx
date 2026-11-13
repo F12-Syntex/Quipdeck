@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SheetGrabber } from "@/components/ui/sheet";
 import { cards, getMove } from "@/content";
-import { MOVE_HUE_RING, moveHueStyle } from "@/lib/move-hue";
+import { MOVE_HUE_RING, moveHue, moveHueStyle } from "@/lib/move-hue";
 import { MotionDemos } from "./motion-demos";
 import { OverlayDemos } from "./overlay-demos";
 
@@ -17,7 +17,13 @@ import { OverlayDemos } from "./overlay-demos";
  * the same here as in the product.
  */
 
-const FOCUS = "outline-2 outline-offset-2 outline-focus";
+/*
+ * Forced focus-visible: the primitives reset `outline` and draw the ring
+ * through the `focus-ring` recipe, which also answers to the
+ * `data-focus-visible` attribute. A class here would lose to `outline-none`.
+ */
+const FOCUS = { "data-focus-visible": "" } as const;
+const focusProps = (state: string) => (state === "focus" ? FOCUS : {});
 const PRESSED = "scale-[0.97]";
 
 function Section({
@@ -221,7 +227,7 @@ type StateKey = (typeof STATES)[number][1];
 
 /** Classes that force a state, mirroring each variant's own :hover / :active rules. */
 function forced(variant: string, state: StateKey): string {
-  if (state === "focus") return FOCUS;
+  if (state === "focus") return "";
   if (state === "pressed") {
     return variant === "tint" ? PRESSED : `${PRESSED} bg-control-pressed`;
   }
@@ -258,6 +264,7 @@ function ButtonMatrix() {
                     variant={v}
                     size="pill-sm"
                     disabled={state === "disabled"}
+                    {...focusProps(state)}
                     className={forced(v, state)}
                   >
                     Button
@@ -277,6 +284,7 @@ function ButtonMatrix() {
                   size="circle"
                   aria-label={`Heart, ${label}`}
                   disabled={state === "disabled"}
+                  {...focusProps(state)}
                   className={forced("glass", state)}
                 >
                   <HeartIcon />
@@ -295,6 +303,7 @@ function ButtonMatrix() {
                   size="circle-lg"
                   aria-label={`Volume, ${label}`}
                   disabled={state === "disabled"}
+                  {...focusProps(state)}
                   className={forced("chrome", state)}
                 >
                   <Volume2Icon />
@@ -312,6 +321,7 @@ function ButtonMatrix() {
                   variant="glass"
                   size="pill"
                   disabled={state === "disabled"}
+                  {...focusProps(state)}
                   className={forced("glass", state)}
                 >
                   Pill
@@ -352,14 +362,9 @@ function FieldMatrix() {
                 aria-label={`${variant} ${label}`}
                 placeholder="Search saved"
                 disabled={state === "disabled"}
+                {...focusProps(state)}
                 className={
-                  state === "hover"
-                    ? "bg-control-hover"
-                    : state === "focus"
-                      ? FOCUS
-                      : state === "pressed"
-                        ? "bg-control-hover"
-                        : ""
+                  state === "hover" || state === "pressed" ? "bg-control-hover" : ""
                 }
               />
             </div>
@@ -386,7 +391,7 @@ function Primitives() {
             Callback
           </Badge>
           <Badge variant="glass">Glass</Badge>
-          <Badge variant="move" style={moveHueStyle("escalation")} tabIndex={0} className={FOCUS}>
+          <Badge variant="move" style={moveHueStyle("escalation")} tabIndex={0} className="focus-ring" {...FOCUS}>
             Focus-visible
           </Badge>
           <Caption>Badges are labels, not controls: no hover or pressed state.</Caption>
@@ -420,62 +425,124 @@ function Primitives() {
 
 /* ---------------- card mock ---------------- */
 
-const card = cards[0];
-const moveLabel = getMove(card.move)?.label ?? card.move;
+/*
+ * Card mock (Gate 2 fix 4): front and back, each in a full-bleed,
+ * viewport-height frame with its own ambient base, glow, vignette and grain,
+ * lit in the card's move hue (hue-scope + moveHueStyle). One cool card and
+ * one warm. Phone frames use the feed slide padding and the portrait card;
+ * desktop frames use the landscape stage (LAYOUT_PLAN sections 4 and 5).
+ */
+type MockCard = (typeof cards)[number];
 
-function MockFront() {
+const MOCK_CARDS: MockCard[] = [
+  cards.find((c) => c.id === "c01") ?? cards[0],
+  cards.find((c) => c.id === "c13") ?? cards[1],
+];
+
+const FRAME =
+  "ambient-frame hue-scope ml-[calc(50%-50vw)] flex h-dvh w-screen items-center justify-center px-2 pt-[calc(env(safe-area-inset-top)+8px)] pb-[calc(env(safe-area-inset-bottom)+68px)] lg:px-0 lg:py-[88px]";
+const FACE =
+  "glass-paint glass-rim relative flex h-full max-h-[780px] w-full max-w-[480px] rounded-card lg:h-[min(620px,calc(100dvh-176px))] lg:w-[min(1040px,calc(100vw-192px))] lg:max-w-none lg:rounded-stage";
+
+function MockFrame({
+  card,
+  face,
+  children,
+}: {
+  card: MockCard;
+  face: "front" | "back";
+  children: ReactNode;
+}) {
+  return (
+    <div
+      data-mock-frame={`${face}-${moveHue(card.move)}`}
+      style={moveHueStyle(card.move)}
+      className={FRAME}
+    >
+      <div aria-hidden="true" className="ambient-glow" />
+      <div aria-hidden="true" className="ambient-vignette" />
+      <div aria-hidden="true" className="ambient-grain" />
+      {children}
+    </div>
+  );
+}
+
+function MockFront({ card }: { card: MockCard }) {
+  const label = getMove(card.move)?.label ?? card.move;
   return (
     <div
       data-testid="mock-front"
-      style={moveHueStyle(card.move)}
-      className="glass-paint glass-rim relative flex aspect-[9/14] w-full max-w-[360px] flex-col rounded-card px-6 pt-8 pb-4"
+      className={`${FACE} flex-col px-6 pt-8 pb-5 lg:px-14 lg:pt-14 lg:pb-12`}
     >
-      <div className="flex flex-1 flex-col justify-center pb-[12%]">
-        <h3 className="text-cue text-balance text-fg-primary">{card.cue}</h3>
-        <p className="mt-3 text-label text-fg-secondary">{moveLabel}</p>
+      <div className="flex flex-1 flex-col justify-center pb-[12%] lg:pb-[4%]">
+        <h3 className="max-w-[18ch] text-cue text-balance text-fg-primary lg:text-cue-stage">
+          {card.cue}
+        </h3>
+        <p className="mt-3 text-body text-fg-secondary lg:mt-5">{label}</p>
       </div>
-      <p className="animate-hint-pulse self-center text-caption text-fg-tertiary motion-reduce:animate-none">
+      <p className="animate-hint-pulse self-center text-caption text-fg-tertiary motion-reduce:animate-none lg:self-start">
         Tap to reveal
       </p>
     </div>
   );
 }
 
-function MockBack() {
+function MockBack({ card }: { card: MockCard }) {
+  const label = getMove(card.move)?.label ?? card.move;
   return (
     <div
       data-testid="mock-back"
-      style={moveHueStyle(card.move)}
-      className="glass-paint glass-rim relative flex aspect-[9/14] w-full max-w-[360px] flex-col gap-3 rounded-card px-4 pt-4 pb-3"
+      className={`${FACE} flex-col gap-3 px-4 pt-4 pb-3 lg:grid lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] lg:items-center lg:gap-10 lg:p-10`}
     >
-      <Badge variant="move" className="self-start">
-        {moveLabel}
-      </Badge>
-      <div className="flex flex-1 flex-col justify-center gap-3">
-        <div className="flex max-w-[85%] flex-col items-start gap-1 self-start">
-          <span className="text-label text-fg-secondary">{card.trigger.speaker}</span>
-          <p className="glass-bubble rounded-bubble px-3 py-2 text-line text-fg-primary">
-            {card.trigger.line}
-          </p>
+      <div className="flex min-h-0 flex-1 flex-col gap-3 lg:h-full">
+        <Badge variant="move" className="self-start">
+          {label}
+        </Badge>
+        <div className="flex flex-1 flex-col justify-center gap-3">
+          <div className="flex max-w-[85%] flex-col items-start gap-1 self-start">
+            <span className="text-label text-fg-secondary">{card.trigger.speaker}</span>
+            <p className="glass-bubble rounded-bubble px-3.5 py-2 text-line text-fg-primary">
+              {card.trigger.line}
+            </p>
+          </div>
+          <div className="flex max-w-[85%] flex-col items-end gap-1 self-end">
+            <span className="text-label text-fg-secondary">{card.response.speaker}</span>
+            <p className="hue-bubble rounded-bubble px-3.5 py-2 text-line text-fg-primary">
+              {card.response.line}
+            </p>
+          </div>
+          <p className="text-body text-fg-secondary">{card.breakdown}</p>
         </div>
-        <div className="flex max-w-[85%] flex-col items-end gap-1 self-end">
-          <span className="text-label text-fg-secondary">{card.response.speaker}</span>
-          <p className="hue-bubble rounded-bubble px-3 py-2 text-line text-fg-primary">
-            {card.response.line}
-          </p>
+      </div>
+      <div className="flex flex-col gap-2">
+        <Skeleton className="aspect-video min-h-[200px] w-full rounded-clip" />
+        <div className="flex items-center gap-2">
+          <p className="min-w-0 flex-1 truncate text-caption text-fg-tertiary">{card.source}</p>
+          <Button variant="glass" size="circle" aria-label="Mute">
+            <Volume2Icon />
+          </Button>
+          <Button variant="glass" size="circle" aria-label="Save">
+            <HeartIcon />
+          </Button>
         </div>
-        <p className="text-body text-fg-secondary">{card.breakdown}</p>
       </div>
-      <Skeleton className="aspect-video w-full rounded-clip" />
-      <div className="flex items-center gap-2">
-        <p className="min-w-0 flex-1 truncate text-caption text-fg-tertiary">{card.source}</p>
-        <Button variant="glass" size="circle" aria-label="Mute">
-          <Volume2Icon />
-        </Button>
-        <Button variant="glass" size="circle" aria-label="Save">
-          <HeartIcon />
-        </Button>
-      </div>
+    </div>
+  );
+}
+
+function CardMocks() {
+  return (
+    <div className="flex flex-col">
+      {MOCK_CARDS.map((card) => (
+        <div key={card.id} className="contents">
+          <MockFrame card={card} face="front">
+            <MockFront card={card} />
+          </MockFrame>
+          <MockFrame card={card} face="back">
+            <MockBack card={card} />
+          </MockFrame>
+        </div>
+      ))}
     </div>
   );
 }
@@ -493,11 +560,12 @@ export function Showcase() {
       </header>
       <Tokens />
       <Primitives />
-      <Section id="card" title="Card, front and back" note="Static mock built only from tokens and primitives. The clip slot is a Skeleton.">
-        <div className="grid justify-items-center gap-6 sm:grid-cols-2">
-          <MockFront />
-          <MockBack />
-        </div>
+      <Section
+        id="card"
+        title="Card, front and back"
+        note={`Static mock built only from tokens and primitives. Each face sits in a viewport-height frame over the glow, in two move hues: ${MOCK_CARDS.map((c) => `${getMove(c.move)?.label ?? c.move} (${moveHue(c.move)} deg)`).join(" and ")}. The clip slot is a Skeleton.`}
+      >
+        <CardMocks />
       </Section>
     </>
   );
