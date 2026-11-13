@@ -2,7 +2,8 @@
 "use strict";
 /*
  * Gate screenshots: `npm run shots -- <phase>` writes 8 states x 3 viewports
- * (24 PNGs) to docs/gates/<phase>/. Builds once and serves with `next start`.
+ * (24 PNGs) plus the showcase (2 PNGs) and the saved-bottom phone shot
+ * (1 PNG) to docs/gates/<phase>/. Builds once and serves with `next start`.
  * The YouTube IFrame API is the stub (D-TEST-2), so a healthy clip is a
  * labelled frame; the fallback shot uses the seeded broken card.
  * Set E2E_SKIP_BUILD=1 to reuse an existing build.
@@ -20,7 +21,9 @@ const VIEWPORTS = [
   { name: "375x667", width: 375, height: 667, touch: true },
   { name: "1440x900", width: 1440, height: 900, touch: false },
 ];
-const SAVED = ["c01", "c03", "c05", "c07", "c09", "c11"];
+// c01+c02 share a move and c03+c04 share a move, so two groups have 2 rows
+// (Gate 1 carry-over); eight rows are enough to scroll on the phone.
+const SAVED = ["c01", "c02", "c03", "c04", "c05", "c07", "c09", "c11"];
 const BROKEN = "c14";
 const ACTIVE = '[data-testid="card"][data-active="true"]';
 
@@ -90,6 +93,7 @@ async function main() {
   const server = await startServer();
   const browser = await chromium.launch();
   const written = [];
+  let navGap = null;
   const shot = async (page, name, vp) => {
     const file = path.join(outDir, `${name}-${vp.name}.png`);
     await page.screenshot({ path: file });
@@ -126,7 +130,28 @@ async function main() {
         const { ctx, page } = await newPage(browser, vp, SAVED);
         await page.goto(server.url + "/saved");
         await page.waitForSelector('[data-testid="saved-row"]');
+        const groups = await page.$$eval('[data-testid="move-group"]', (gs) =>
+          gs.map((g) => g.querySelectorAll('[data-testid="saved-row"]').length),
+        );
+        if (!groups.some((n) => n >= 2)) throw new Error("saved shot has no group with 2+ rows: " + groups);
         await shot(page, "saved-populated", vp);
+        if (vp.name === "390x844") {
+          // Phone, scrolled to the bottom: the last row must clear the nav.
+          await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
+          await page.waitForTimeout(250);
+          const m = await page.evaluate(() => {
+            const rows = [...document.querySelectorAll('[data-testid="saved-row"]')].filter((r) => r.offsetParent);
+            const last = rows[rows.length - 1].getBoundingClientRect();
+            const nav = document.querySelector('nav[aria-label="Primary"]').getBoundingClientRect();
+            return { lastBottom: last.bottom, navTop: nav.top, atEnd: Math.ceil(window.scrollY + window.innerHeight) >= document.documentElement.scrollHeight - 1 };
+          });
+          navGap = Math.round((m.navTop - m.lastBottom) * 10) / 10;
+          console.log(`saved-bottom: last row bottom ${m.lastBottom}px, nav top ${m.navTop}px, gap ${navGap}px, at end ${m.atEnd}`);
+          if (!m.atEnd) throw new Error("saved-bottom: page not scrolled to the end");
+          if (navGap < 0) throw new Error(`saved-bottom: last row overlaps the nav by ${-navGap}px`);
+          await shot(page, "saved-bottom", vp);
+          await page.evaluate(() => window.scrollTo(0, 0));
+        }
         const search = page.getByRole("searchbox", { name: "Search saved" });
         await search.fill("someone");
         await page.waitForTimeout(200);
@@ -155,15 +180,28 @@ async function main() {
         await ctx.close();
       }
     }
+    // Showcase (R-6): phone and desktop, full page.
+    for (const vp of VIEWPORTS.filter((v) => v.name !== "375x667")) {
+      const { ctx, page } = await newPage(browser, vp);
+      await page.goto(server.url + "/showcase");
+      await page.waitForSelector('[data-testid="showcase"]');
+      await page.evaluate(() => document.fonts.ready);
+      await page.waitForTimeout(300);
+      const file = path.join(outDir, `showcase-${vp.name}.png`);
+      await page.screenshot({ path: file, fullPage: true });
+      written.push(file);
+      console.log("wrote", path.relative(ROOT, file));
+      await ctx.close();
+    }
   } finally {
     await browser.close();
     await server.stop();
   }
-  if (written.length !== 24) {
-    console.error(`expected 24 PNGs, wrote ${written.length}`);
+  if (written.length !== 27) {
+    console.error(`expected 27 PNGs, wrote ${written.length}`);
     process.exit(1);
   }
-  console.log(`wrote ${written.length} PNGs to docs/gates/${phase}/`);
+  console.log(`wrote ${written.length} PNGs to docs/gates/${phase}/ (saved-bottom nav gap ${navGap}px)`);
 }
 
 main().catch((err) => {
