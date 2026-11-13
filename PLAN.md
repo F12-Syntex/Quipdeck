@@ -210,3 +210,4 @@ GATE 4 -> { P5-1 | P5-2 } -> P5-3 -> FINAL GATE
 | Task | Status |
 |---|---|
 | T0, T1, PLAN, P1-1, P1-2, P1-3, P1-4, P1-4b, P1-5, P1-6 | done |
+| Gate 1 | APPROVED (see docs/gates/GATES.md for carry-overs) |
