@@ -215,4 +215,7 @@ GATE 4 -> { P5-1 | P5-2 } -> P5-3 -> FINAL GATE
 | Gate 2 | VETO 1, then APPROVED on re-review (depends on P2-4) |
 | P2-4, P3-1, P3-2 | done (design system frozen) |
 | Gate 3 | APPROVED |
+| P4-1, P4-3, P4-5 | merged |
+| P4-6 inbox | (1) D-CLIP-13: restore `rounded-clip` in clip.tsx; make CL-19 radius-aware. (2) Gate 3: delete unused Sheet, SheetGrabber and Dialog primitives. (3) Add `data-base-ui-swipe-ignore` on the clip so swiping it inside the Drawer does not dismiss. (4) Recheck the detail title inset against CardBack at 390 and 1440. (5) After P4-7, check that DrawerTitle/Description and the quiet pill button render their intended sizes and remove the P4-5 workarounds. |
+| P5-1 inbox | OV-4 needs one frame between Tabs. Swipe tests must pass half the sheet height or be a flick. Harden the KB-4 flake (seen 3 times). |
 | Known flake | KB-4 (M-mute, goToCard timeout) failed once in P2-2 and passed on the lead's re-run. P5-1 hardens it. |
