@@ -74,3 +74,11 @@ Final-gate notes:
 - saved-bottom 390: the card emerging under the stuck pill can read as a dropdown in a still. Judge it in motion. If it still reads as attached, strengthen the fade; do not add a divider.
 - Confirm real embeds in a browser run (gate shots use the stub).
 - Owed from Phase 5: key-hint fade, loading hue wash, device checks.
+
+## Final gate: APPROVED
+
+No regressions: all 49 final shots were pixel-diffed against the Gate 4 pack. Structure matches p1/p3 at all three viewports. Scope is exactly the spec, with nothing left to cut. The search fade reads as detached in motion (docs/gates/final scroll frames). No divider is needed.
+
+This approval covers the design. Still owed before release, on real devices (VALIDATION.md, MAN list): YouTube playback, captions and unmute; iOS tap-to-pause under reduced motion (the Gate 1 condition: if it fails, cue without autoplay); hue pairs 170/205 and 245/275; safe areas.
+
+> "We kept removing things until what remained was simply the cue, the move, and the moment between two people. It no longer feels designed; it feels like it could not have been any other way."
