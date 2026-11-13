@@ -1,4 +1,11 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { motion, type MotionStyle } from "framer-motion";
 import { getMove, type WitCard as WitCardData } from "@/content";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { moveHueStyle } from "@/lib/move-hue";
 import { cn } from "@/lib/utils";
 import { Clip } from "./clip";
 import { HeartButton } from "./heart-button";
@@ -12,17 +19,27 @@ export type CardBackProps = {
   onFlipBack?: () => void;
   /** Set by `WitCard` while the front is showing: hidden and `inert`. */
   concealed?: boolean;
+  /** Face paint and shape, from `WitCard` (the Saved detail passes none). */
+  className?: string;
+  /** Flip visuals (rotation, visibility, opacity), from `WitCard`. */
+  style?: MotionStyle;
+  /** Decoration drawn over the face during the flip (the specular sweep). */
+  children?: ReactNode;
 };
 
 /*
- * Layout (LAYOUT_PLAN sections 3 and 5). The root is a size container; the
- * inner grid follows the card's own width:
- * - below 720 px, stacked: tag / text block (flexible, centred) / clip + actions
- * - from 720 px, two columns 5fr | 7fr: tag, exchange, breakdown on the left
- *   (the text block wrapper becomes `display: contents`), clip + actions on
- *   the right, vertically centred.
- * Height tiers follow the viewport height: compact at <= 700 px; below 600 px
- * the text block alone may scroll.
+ * Layout (LAYOUT_PLAN sections 3 and 5, Gate 1 and Gate 2 carry-overs).
+ * The root is a size container; the inner layout follows the card's width:
+ * - below 720 px, stacked: one column, centred as one block with a fixed
+ *   rhythm, so the tag sits right above the exchange, the breakdown right
+ *   under the response, and the clip right under the breakdown. Spare
+ *   height goes to the card's top and bottom margins, never between parts.
+ * - from 720 px, two columns 5fr | 7fr: tag, exchange and breakdown as one
+ *   group on the left, clip and actions on the right, both centred.
+ * Height tiers follow the viewport height: compact at <= 700 px; below
+ * 600 px the text block alone may scroll.
+ * Every hue tint (tag, response bubble, focus ring) is the card's own move
+ * hue, so a card next to the active one, or in the Saved detail, is right.
  */
 
 /** Back (no flip logic). Reused by the feed, the sheet and the pane. */
@@ -31,85 +48,123 @@ export function CardBack({
   clipActive,
   onFlipBack,
   concealed = false,
+  className,
+  style,
+  children,
 }: CardBackProps) {
   return (
-    <div
+    <motion.div
       data-testid="card-back"
       inert={concealed}
+      style={{ ...(moveHueStyle(card.move) as MotionStyle), ...style }}
       className={cn(
-        "@container col-start-1 row-start-1 h-full min-h-0 w-full min-w-0",
+        "@container hue-scope col-start-1 row-start-1 h-full min-h-0 w-full min-w-0",
         concealed && "invisible",
+        className,
       )}
     >
-      <div className="relative grid h-full grid-cols-[minmax(0,1fr)] grid-rows-[auto_minmax(0,1fr)_auto] gap-y-3 px-4 pt-4 pb-3 [@media(max-height:700px)]:gap-y-2 [@media(max-height:700px)]:px-3 [@media(max-height:700px)]:pt-3 [@media(max-height:700px)]:pb-2 @min-[720px]:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] @min-[720px]:gap-x-10 @min-[720px]:gap-y-4 @min-[720px]:p-10 @min-[720px]:[@media(max-height:700px)]:p-8">
+      <div
+        className={cn(
+          "relative flex h-full flex-col justify-center-safe gap-3 px-4 pt-4 pb-3",
+          "[@media(max-height:700px)]:gap-2 [@media(max-height:700px)]:px-3 [@media(max-height:700px)]:pt-3 [@media(max-height:700px)]:pb-2",
+          "@min-[720px]:grid @min-[720px]:grid-cols-[minmax(0,5fr)_minmax(0,7fr)] @min-[720px]:items-center @min-[720px]:gap-x-10 @min-[720px]:p-10",
+          "@min-[720px]:[@media(max-height:700px)]:p-8",
+        )}
+      >
         {onFlipBack ? (
-          <button
-            type="button"
+          <Button
+            variant="glass"
+            size="pill-sm"
             data-testid="flip-back"
             onClick={onFlipBack}
-            className="pointer-events-none absolute top-2 left-2 z-10 min-h-11 border border-neutral-700 bg-neutral-950 px-3 text-sm opacity-0 focus-visible:pointer-events-auto focus-visible:opacity-100"
+            className="pointer-events-none absolute top-3 left-3 z-10 opacity-0 focus-visible:pointer-events-auto focus-visible:opacity-100"
           >
             Back to cue
-          </button>
+          </Button>
         ) : null}
 
-        <p
-          data-testid="move"
-          className="col-start-1 row-start-1 justify-self-start border border-neutral-700 px-2.5 py-1 text-xs leading-4 [@media(max-height:700px)]:py-[3px]"
+        {/* Words: tag, exchange, breakdown. */}
+        <div
+          className={cn(
+            "flex min-h-0 flex-col gap-3",
+            "[@media(max-height:700px)]:gap-2",
+            "@min-[720px]:col-start-1 @min-[720px]:row-start-1 @min-[720px]:max-h-full @min-[720px]:gap-5",
+          )}
         >
-          {getMove(card.move)?.label ?? card.move}
-        </p>
-
-        <div className="col-start-1 row-start-2 flex min-h-0 flex-col justify-center gap-2.5 overflow-hidden [@media(max-height:599px)]:overflow-y-auto [@media(max-height:700px)]:gap-2 @min-[720px]:contents">
-          <ul
-            data-testid="exchange"
-            className="flex flex-col gap-2 [@media(max-height:700px)]:gap-1.5 @min-[720px]:col-start-1 @min-[720px]:row-start-2 @min-[720px]:self-center"
+          <Badge
+            variant="move"
+            data-testid="move"
+            render={<p />}
+            className="self-start [@media(max-height:700px)]:h-6"
           >
-            <li
-              data-testid="trigger"
-              className="flex max-w-[85%] flex-col items-start self-start"
-            >
-              <span
-                data-testid="speaker"
-                className="text-xs leading-4 [@media(max-height:700px)]:leading-[14px]"
-              >
-                {card.trigger.speaker}
-              </span>
-              <p
-                data-testid="line"
-                className="line-clamp-3 border border-neutral-700 px-3 py-2 text-sm leading-5 [@media(max-height:700px)]:py-1.5 [@media(max-height:700px)]:leading-[18px]"
-              >
-                {card.trigger.line}
-              </p>
-            </li>
-            <li
-              data-testid="response"
-              className="flex max-w-[85%] flex-col items-end self-end"
-            >
-              <span
-                data-testid="speaker"
-                className="text-xs leading-4 [@media(max-height:700px)]:leading-[14px]"
-              >
-                {card.response.speaker}
-              </span>
-              <p
-                data-testid="line"
-                className="line-clamp-3 border-2 border-neutral-500 px-3 py-2 text-sm leading-5 [@media(max-height:700px)]:py-1.5 [@media(max-height:700px)]:leading-[18px]"
-              >
-                {card.response.line}
-              </p>
-            </li>
-          </ul>
+            {getMove(card.move)?.label ?? card.move}
+          </Badge>
 
-          <p
-            data-testid="breakdown"
-            className="line-clamp-2 text-sm leading-5 [@media(max-height:700px)]:leading-[18px] @min-[720px]:col-start-1 @min-[720px]:row-start-3"
+          <div
+            className={cn(
+              "flex min-h-0 flex-col gap-2.5 overflow-hidden",
+              "[@media(max-height:700px)]:gap-2 [@media(max-height:599px)]:overflow-y-auto",
+              "@min-[720px]:gap-3",
+            )}
           >
-            {card.breakdown}
-          </p>
+            <ul
+              data-testid="exchange"
+              className="flex flex-col gap-2 [@media(max-height:700px)]:gap-1.5"
+            >
+              <li
+                data-testid="trigger"
+                className="flex max-w-[85%] flex-col items-start gap-1 self-start"
+              >
+                <span
+                  data-testid="speaker"
+                  className="px-1 text-label leading-4 text-fg-secondary [@media(max-height:700px)]:leading-[14px]"
+                >
+                  {card.trigger.speaker}
+                </span>
+                <p
+                  data-testid="line"
+                  className="line-clamp-3 rounded-bubble glass-bubble px-3.5 py-2 text-line text-fg-primary [@media(max-height:700px)]:py-1.5 [@media(max-height:700px)]:text-line-compact"
+                >
+                  {card.trigger.line}
+                </p>
+              </li>
+              <li
+                data-testid="response"
+                className="flex max-w-[85%] flex-col items-end gap-1 self-end"
+              >
+                <span
+                  data-testid="speaker"
+                  className="px-1 text-label leading-4 text-fg-secondary [@media(max-height:700px)]:leading-[14px]"
+                >
+                  {card.response.speaker}
+                </span>
+                <p
+                  data-testid="line"
+                  className="line-clamp-3 rounded-bubble hue-bubble px-3.5 py-2 text-line text-fg-primary [@media(max-height:700px)]:py-1.5 [@media(max-height:700px)]:text-line-compact"
+                >
+                  {card.response.line}
+                </p>
+              </li>
+            </ul>
+
+            <p
+              data-testid="breakdown"
+              className="line-clamp-2 px-1 text-body text-fg-secondary [@media(max-height:700px)]:leading-[18px]"
+            >
+              {card.breakdown}
+            </p>
+          </div>
         </div>
 
-        <div className="col-start-1 row-start-3 flex min-w-0 flex-col gap-2 [@media(max-height:700px)]:gap-1.5 @min-[720px]:col-start-2 @min-[720px]:row-span-3 @min-[720px]:row-start-1 @min-[720px]:self-center [&:has([data-clip-state=error])_[data-testid=mute]]:invisible">
+        {/* Media: clip and action row, as one block. */}
+        <div
+          className={cn(
+            "flex min-w-0 shrink-0 flex-col gap-2",
+            "[@media(max-height:700px)]:gap-1.5",
+            "@min-[720px]:col-start-2 @min-[720px]:row-start-1",
+            "[&:has([data-clip-state=error])_[data-testid=mute]]:invisible",
+          )}
+        >
           {/* Clip slot: 16:9, never under 200 px tall (F7); the clip fills it. */}
           <div className="aspect-video min-h-[200px] w-full *:h-full *:w-full">
             <Clip clip={card.clip} title={card.cue} active={clipActive} />
@@ -118,7 +173,7 @@ export function CardBack({
             {card.source ? (
               <p
                 data-testid="source"
-                className="min-w-0 flex-1 truncate text-xs leading-4"
+                className="min-w-0 flex-1 truncate pl-1 text-caption text-fg-tertiary"
               >
                 {card.source}
               </p>
@@ -130,6 +185,7 @@ export function CardBack({
           </div>
         </div>
       </div>
-    </div>
+      {children}
+    </motion.div>
   );
 }

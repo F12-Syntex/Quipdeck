@@ -1,3 +1,7 @@
+"use client";
+
+import type { ReactNode } from "react";
+import { motion, type MotionStyle } from "framer-motion";
 import { getMove, type WitCard as WitCardData } from "@/content";
 import { cn } from "@/lib/utils";
 
@@ -7,31 +11,50 @@ export type CardFrontProps = {
   onReveal: () => void;
   /** Set by `WitCard` while the back is showing: hidden and `inert`. */
   concealed?: boolean;
+  /** Face paint and shape, from `WitCard`. */
+  className?: string;
+  /** Flip visuals (rotation, visibility, opacity), from `WitCard`. */
+  style?: MotionStyle;
+  /** Decoration drawn over the face during the flip (the specular sweep). */
+  children?: ReactNode;
 };
 
 /**
  * Front (LAYOUT_PLAN section 4): cue (largest text), move label under it,
  * reveal hint at the bottom. No heart, mute or clip. The hint's wording
  * follows the pointer through CSS only, so server and client agree.
+ * The cue and label sit at the optical centre (slightly above the middle).
  */
-export function CardFront({ card, onReveal, concealed = false }: CardFrontProps) {
+export function CardFront({
+  card,
+  onReveal,
+  concealed = false,
+  className,
+  style,
+  children,
+}: CardFrontProps) {
   return (
-    <div
+    <motion.div
       data-testid="card-front"
       inert={concealed}
+      style={style}
       className={cn(
-        "col-start-1 row-start-1 flex h-full min-h-0 w-full min-w-0 flex-col px-6 pt-6 pb-3 lg:px-14 lg:pt-14 lg:pb-10",
+        "col-start-1 row-start-1 flex h-full min-h-0 w-full min-w-0 flex-col px-6 pt-8 pb-4 lg:px-14 lg:pt-14 lg:pb-11",
         concealed && "invisible",
+        className,
       )}
     >
-      <div className="flex min-h-0 flex-1 flex-col justify-center pb-[12%]">
+      <div className="flex min-h-0 flex-1 flex-col justify-center pb-[12%] lg:pb-[4%]">
         <h2
           data-testid="cue"
-          className="line-clamp-4 text-3xl leading-tight text-balance lg:max-w-[18ch] lg:text-5xl"
+          className="line-clamp-4 max-w-[18ch] text-cue text-balance text-fg-primary lg:text-cue-stage"
         >
           {card.cue}
         </h2>
-        <p data-testid="move" className="mt-3 text-sm lg:mt-5 lg:text-base">
+        <p
+          data-testid="move"
+          className="mt-3 text-body text-fg-secondary lg:mt-5"
+        >
           {getMove(card.move)?.label ?? card.move}
         </p>
       </div>
@@ -39,11 +62,12 @@ export function CardFront({ card, onReveal, concealed = false }: CardFrontProps)
         type="button"
         data-testid="reveal"
         onClick={onReveal}
-        className="min-h-11 self-center px-4 text-sm lg:self-start lg:px-0"
+        className="min-h-11 animate-hint-pulse self-center rounded-pill px-4 text-caption text-fg-tertiary motion-reduce:animate-none lg:-ml-1 lg:self-start lg:px-1"
       >
         <span className="pointer-fine:hidden">Tap to reveal</span>
         <span className="hidden pointer-fine:inline">Click to reveal</span>
       </button>
-    </div>
+      {children}
+    </motion.div>
   );
 }

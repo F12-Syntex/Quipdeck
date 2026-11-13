@@ -1,6 +1,6 @@
 "use client";
 
-import { Heart } from "lucide-react";
+import { HeartToggle } from "@/components/ui/heart-toggle";
 import { toggleSaved, useIsSaved } from "@/lib/saves-store";
 import { announce } from "./announcer";
 
@@ -13,23 +13,18 @@ export function toggleSaveAndAnnounce(cardId: string): boolean {
   return saved;
 }
 
-/** Heart (D-SAVE-5): fixed name "Save", `aria-pressed`, 44 px target. */
+/**
+ * Heart (D-SAVE-5): fixed name "Save", `aria-pressed`, 44 px glass circle.
+ * Controlled by the saves store, so a save by the S key pops it too.
+ */
 export function HeartButton({ cardId }: HeartButtonProps) {
   const saved = useIsSaved(cardId);
   return (
-    <button
-      type="button"
+    <HeartToggle
       data-testid="heart"
-      aria-label="Save"
-      aria-pressed={saved}
-      onClick={() => toggleSaveAndAnnounce(cardId)}
-      className="inline-flex size-11 shrink-0 items-center justify-center border border-neutral-700"
-    >
-      <Heart
-        aria-hidden="true"
-        className="size-5"
-        fill={saved ? "currentColor" : "none"}
-      />
-    </button>
+      label="Save"
+      pressed={saved}
+      onPressedChange={() => toggleSaveAndAnnounce(cardId)}
+    />
   );
 }
