@@ -77,12 +77,20 @@ export function CardBack({
         )}
       >
         {onFlipBack ? (
+          /*
+           * A-9: the hit target is 44 px tall, the pill still paints 36 px.
+           * A 5 px transparent border (instead of 1 px) grows the box by
+           * 4 px a side; the fill (bg-clip-padding) and the inset glass
+           * shadows stop at the padding box, the box moves 4 px up and left,
+           * and the ring is pulled in 4 px, so the pill and its ring sit
+           * exactly where they did. Absolutely placed: no layout change.
+           */
           <Button
             variant="glass"
             size="pill-sm"
             data-testid="flip-back"
             onClick={onFlipBack}
-            className="pointer-events-none absolute top-3 left-3 z-10 opacity-0 focus-visible:pointer-events-auto focus-visible:opacity-100"
+            className="pointer-events-none absolute top-2 left-2 z-10 h-11 border-[5px] opacity-0 [--focus-ring-offset:-2px] focus-visible:pointer-events-auto focus-visible:opacity-100"
           >
             Back to cue
           </Button>
