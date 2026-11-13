@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { AppNav } from "@/components/shell/app-nav";
+import { AmbientLayer } from "@/components/ui/ambient-layer";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -21,7 +22,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   viewportFit: "cover",
-  themeColor: "#0a0a0a",
+  // Matches --surface-base (D-THEME-1).
+  themeColor: "#0d0e11",
   width: "device-width",
   initialScale: 1,
 };
@@ -38,6 +40,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <link rel="preconnect" href="https://www.youtube.com" />
       </head>
       <body className="min-h-full flex flex-col">
+        <AmbientLayer />
         {children}
         <AppNav />
       </body>
