@@ -2,6 +2,8 @@
 
 import { useId } from "react";
 import type { MoveGroup, WitCard } from "@/content";
+import { Badge } from "@/components/ui/badge";
+import { moveHueStyle } from "@/lib/move-hue";
 
 export type SavedGroupsProps = {
   groups: MoveGroup[];
@@ -19,7 +21,7 @@ export function SavedGroups({
   registerRow,
 }: SavedGroupsProps) {
   return (
-    <div className="mt-4 flex flex-col gap-6">
+    <div className="mt-4 flex flex-col gap-7">
       {groups.map((group) => (
         <SavedGroup
           key={group.move.id}
@@ -33,6 +35,13 @@ export function SavedGroups({
   );
 }
 
+/*
+ * One rounded group (`rounded-group`) on unblurred glass, hairline
+ * dividers. The label is the move tag in the move's own hue, the same pill
+ * as the card back, so a group reads as that move at a glance; the rows
+ * stay neutral (D-SAVED-4). The group does not clip: the end rows carry
+ * the radius themselves, so an inset focus ring keeps its corners.
+ */
 function SavedGroup({
   group,
   selectedId,
@@ -45,13 +54,15 @@ function SavedGroup({
       data-testid="move-group"
       data-move-id={group.move.id}
       aria-labelledby={headingId}
+      style={moveHueStyle(group.move.id)}
+      className="hue-scope"
     >
-      <h2 id={headingId} className="mb-2 text-sm">
-        {group.move.label}
+      <h2 id={headingId} className="mb-2.5 flex">
+        <Badge variant="move">{group.move.label}</Badge>
       </h2>
-      <ul className="border border-neutral-700">
+      <ul className="rounded-group glass-control">
         {group.cards.map((card) => (
-          <li key={card.id} className="border-b border-neutral-800 last:border-b-0">
+          <li key={card.id} className="border-b border-hairline last:border-b-0">
             <SavedRow
               card={card}
               selected={card.id === selectedId}
@@ -88,10 +99,14 @@ function SavedRow({
         return () => registerRow(card.id, null);
       }}
       onClick={() => onOpen(card.id)}
-      className="flex min-h-16 w-full flex-col items-start gap-1 px-4 py-3 text-left aria-[current=true]:outline-2 aria-[current=true]:-outline-offset-2 aria-[current=true]:outline-neutral-500"
+      className="flex min-h-16 w-full flex-col items-start gap-0.5 px-4 py-3 text-left transition-colors duration-(--dur-fast) ease-soft -outline-offset-2 hover:bg-control-hover active:bg-control-pressed aria-[current=true]:bg-[var(--control-active)] [li:first-child>&]:rounded-t-group [li:last-child>&]:rounded-b-group"
     >
-      <span className="w-full truncate">{card.cue}</span>
-      <span className="line-clamp-2 text-sm">{card.response.line}</span>
+      <span className="w-full truncate text-body font-medium text-fg-primary">
+        {card.cue}
+      </span>
+      <span className="line-clamp-2 text-body text-fg-secondary">
+        {card.response.line}
+      </span>
     </button>
   );
 }
