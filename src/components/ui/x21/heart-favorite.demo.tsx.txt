@@ -1,0 +1,9 @@
+import { HeartFavorite } from "@/components/ui/heart-favorite-shadcnui"
+
+export default function Demo() {
+  return (
+    <div className="flex min-h-screen items-center justify-center bg-background p-8">
+      <HeartFavorite />
+    </div>
+  )
+}
