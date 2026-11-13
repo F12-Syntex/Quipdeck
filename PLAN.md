@@ -214,4 +214,5 @@ GATE 4 -> { P5-1 | P5-2 } -> P5-3 -> FINAL GATE
 | P2-1, P2-2, P2-3 | done |
 | Gate 2 | VETO 1, then APPROVED on re-review (depends on P2-4) |
 | P2-4, P3-1, P3-2 | done (design system frozen) |
+| Gate 3 | APPROVED |
 | Known flake | KB-4 (M-mute, goToCard timeout) failed once in P2-2 and passed on the lead's re-run. P5-1 hardens it. |

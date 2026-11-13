@@ -40,3 +40,13 @@ Carry-overs:
 - Hue ring: 190/215 and 15/345 are still near-twins. Give every move in `moves.ts` its own clearly distinct hue (10 slots for 10 moves) rather than 8 shared ones. Owner: P3-2 (`move-hue.ts`, design system owner).
 - Card back: the empty clip slab is the heaviest, deadest area. Give it a poster frame or hue wash while loading or in fallback. Owner: P4-3. Tighten the void between the tag and the first bubble. Owner: P4-2.
 - Specular is held at 0.12 and must never be raised.
+
+## Gate 3: component library, APPROVED
+
+The ports read as native. NavPill, HeartToggle and Drawer are each the best version of themselves. Dropping Glass Card was right. Hues 20/50/80 read as rose, copper and amber. The tightest pair is 170/205: acceptable, but never move them closer.
+
+Carry-overs:
+- P4-5 (saved): move `detail-sheet.tsx` and `card-detail.tsx` to Drawer (D-SAVED-8). Use `DrawerTitle` for the cue so it outranks the body. Close with the glass circle, not a text pill.
+- P4-6 (integration): once P4-5 has merged, delete the unused `Sheet`, `SheetGrabber` and `Dialog` primitives, leaving one sheet primitive. The lead authorises this one design-system edit.
+- P4-1 (shell): `AppNav` always passes `active` to NavPill. The focus ring on the end item must not cross the pill outline.
+- MAN (device check): saved rows with 170/205 and 245/275 side by side.
