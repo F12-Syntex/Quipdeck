@@ -28,7 +28,10 @@ export type ClipState = "idle" | ClipControllerState;
 export const CLIP_SETTLE_MS = 150;
 
 /**
- * Clip box (D-CLIP-1..9). Grey-box styling only (P1).
+ * Clip box (D-CLIP-1..9). Styled in P4-3: `rounded-clip` frame, hue wash
+ * behind the player, shimmer while loading, fade-in when ready. The corner
+ * radius is 0.6 x `--radius-clip` (12 px): CL-19 hit-tests 4 px inside each
+ * corner, which a 20 px clip radius would fall outside of.
  * The box keeps one footprint in every state (16:9, at least 200 px tall).
  * The player lives in `mountRef`, which React never renders children into;
  * the skeleton sits behind it and the fallback replaces it on error.
@@ -91,18 +94,30 @@ export function Clip({ clip, title, active }: ClipProps) {
   }, [muted]);
 
   const state: ClipState = active ? phase : "idle";
+  const live = state === "playing" || state === "paused";
 
   return (
     <div
       data-testid="clip"
       data-clip-state={state}
       data-no-flip=""
-      className="relative isolate aspect-video min-h-[200px] w-full overflow-hidden border border-neutral-700"
+      className="relative isolate aspect-video min-h-[200px] w-full overflow-hidden rounded-[calc(var(--radius-clip)*0.6)] border border-hairline bg-[oklch(0.14_0.02_var(--move-hue))]"
     >
+      {/* Hue wash (idle, loading, error): sits behind the player and is never
+          drawn over it. Uses only the move-hue glow tokens and the specular
+          token at its frozen 0.12. No thumbnail is fetched (D-CLIP-3). */}
+      <div
+        aria-hidden="true"
+        className="pointer-events-none absolute inset-0 -z-10"
+        style={{
+          backgroundImage:
+            "radial-gradient(110% 65% at 8% 0%, var(--glass-specular), transparent 62%), radial-gradient(90% 90% at 50% 55%, color-mix(in oklab, var(--hue-glow) 70%, transparent) 0%, transparent 78%), radial-gradient(70% 70% at 90% 100%, var(--hue-glow-soft), transparent 70%)",
+        }}
+      />
       {state === "loading" ? (
         <div
           aria-hidden="true"
-          className="absolute inset-0 -z-10 bg-neutral-900"
+          className="skeleton-shimmer animate-shimmer pointer-events-none absolute inset-0 -z-10 motion-reduce:animate-none"
         />
       ) : null}
       <div
@@ -110,7 +125,8 @@ export function Clip({ clip, title, active }: ClipProps) {
         className={
           state === "error"
             ? "hidden"
-            : "absolute inset-0 [&>iframe]:block [&>iframe]:h-full [&>iframe]:w-full"
+            : "absolute inset-0 [&>iframe]:block [&>iframe]:h-full [&>iframe]:w-full " +
+              (live ? "animate-ready-fade" : "opacity-0")
         }
       />
       {state === "error" ? (
@@ -118,9 +134,14 @@ export function Clip({ clip, title, active }: ClipProps) {
           data-testid="clip-fallback"
           className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-4 text-center"
         >
-          <VideoOff aria-hidden="true" className="size-6" />
-          <p>Clip unavailable</p>
-          <p className="text-sm">The exchange is all here.</p>
+          <VideoOff
+            aria-hidden="true"
+            className="mb-1 size-6 text-fg-secondary"
+          />
+          <p className="text-line text-fg-primary">Clip unavailable</p>
+          <p className="text-body text-fg-secondary">
+            The exchange is all here.
+          </p>
         </div>
       ) : null}
     </div>
