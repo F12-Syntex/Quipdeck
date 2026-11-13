@@ -30,10 +30,12 @@ export type CardBackProps = {
 /*
  * Layout (LAYOUT_PLAN sections 3 and 5, Gate 1 and Gate 2 carry-overs).
  * The root is a size container; the inner layout follows the card's width:
- * - below 720 px, stacked: one column, centred as one block with a fixed
- *   rhythm, so the tag sits right above the exchange, the breakdown right
- *   under the response, and the clip right under the breakdown. Spare
- *   height goes to the card's top and bottom margins, never between parts.
+ * - below 720 px, stacked: the clip and action row are pinned to the
+ *   bottom of the card (thumb zone; the heart and clip sit at the same
+ *   place on every card), and the words (tag, exchange, breakdown) are one
+ *   block with a fixed rhythm, centred in the space above. The tag rides
+ *   with the exchange instead of being pinned to the top (Gate 2
+ *   carry-over: no void between the tag and the first bubble; P4-6).
  * - from 720 px, two columns 5fr | 7fr: tag, exchange and breakdown as one
  *   group on the left, clip and actions on the right, both centred.
  * Height tiers follow the viewport height: compact at <= 700 px; below
@@ -83,10 +85,10 @@ export function CardBack({
           </Button>
         ) : null}
 
-        {/* Words: tag, exchange, breakdown. */}
+        {/* Words: tag, exchange, breakdown. Stacked: centred above the media. */}
         <div
           className={cn(
-            "flex min-h-0 flex-col gap-3",
+            "flex min-h-0 flex-col gap-3 @max-[719px]:my-auto",
             "[@media(max-height:700px)]:gap-2",
             "@min-[720px]:col-start-1 @min-[720px]:row-start-1 @min-[720px]:max-h-full @min-[720px]:gap-5",
           )}

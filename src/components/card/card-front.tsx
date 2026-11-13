@@ -24,6 +24,8 @@ export type CardFrontProps = {
  * reveal hint at the bottom. No heart, mute or clip. The hint's wording
  * follows the pointer through CSS only, so server and client agree.
  * The cue and label sit at the optical centre (slightly above the middle).
+ * The hint pulses only on the active card's showing front (one moving
+ * thing at a time; no hidden animations on the other cards).
  */
 export function CardFront({
   card,
@@ -62,7 +64,7 @@ export function CardFront({
         type="button"
         data-testid="reveal"
         onClick={onReveal}
-        className="min-h-11 animate-hint-pulse self-center rounded-pill px-4 text-caption text-fg-tertiary motion-reduce:animate-none lg:-ml-1 lg:self-start lg:px-1"
+        className="min-h-11 animate-hint-pulse self-center rounded-pill px-4 text-caption text-fg-tertiary motion-reduce:animate-none in-data-[active=false]:animate-none in-data-[face=back]:animate-none lg:-ml-1 lg:self-start lg:px-1"
       >
         <span className="pointer-fine:hidden">Tap to reveal</span>
         <span className="hidden pointer-fine:inline">Click to reveal</span>

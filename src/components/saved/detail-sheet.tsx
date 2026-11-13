@@ -21,11 +21,17 @@ export type DetailSheetProps = {
  *
  * Height: the drawer popup hangs a 3rem bleed below the screen. Its box is
  * capped at 92dvh in all (OV-13), so the visible sheet stays under that.
+ *
+ * One moving thing at a time: the clip may start only once the sheet has
+ * finished rising (instant under reduced motion), as the feed's clip waits
+ * for the flip to settle (D-CLIP-6).
  */
 export function DetailSheet({ cardId, onClose, returnFocus }: DetailSheetProps) {
   // Keep the last card while the sheet plays its exit transition.
   const [shownId, setShownId] = useState(cardId);
   if (cardId !== null && cardId !== shownId) setShownId(cardId);
+  // True once the open transition has finished; false again once closed.
+  const [risen, setRisen] = useState(false);
 
   return (
     <Drawer
@@ -33,13 +39,14 @@ export function DetailSheet({ cardId, onClose, returnFocus }: DetailSheetProps) 
       onOpenChange={(open) => {
         if (!open) onClose();
       }}
+      onOpenChangeComplete={setRisen}
     >
       <DrawerPopup
         finalFocus={() => (shownId ? returnFocus(shownId) : null) ?? true}
         className="max-h-[92dvh]"
       >
         <DrawerHandle data-testid="sheet-grabber" />
-        {shownId ? <CardDetail cardId={shownId} mode="sheet" /> : null}
+        {shownId ? <CardDetail cardId={shownId} mode="sheet" clipActive={risen} /> : null}
       </DrawerPopup>
     </Drawer>
   );

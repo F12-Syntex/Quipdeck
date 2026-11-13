@@ -1,17 +1,19 @@
 "use client";
 
-import { useId } from "react";
+import { useEffect, useId } from "react";
 import { XIcon } from "lucide-react";
 import { cards } from "@/content";
 import { CardBack } from "@/components/card/card-back";
 import { Button } from "@/components/ui/button";
 import { DrawerClose, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
-import { moveHueStyle } from "@/lib/move-hue";
+import { moveHueStyle, publishMoveHue } from "@/lib/move-hue";
 
 export type CardDetailProps = {
   cardId: string;
   /** "sheet" below the desktop breakpoint, "pane" at it (D-SAVED-7). */
   mode: "sheet" | "pane";
+  /** The clip may play (default true). The sheet holds it until it has risen. */
+  clipActive?: boolean;
 };
 
 /*
@@ -34,9 +36,27 @@ const TITLE_INSET = "px-4 [@media(max-height:700px)]:px-3";
  * the card scrolls in `DrawerContent`, which holds off the swipe until it
  * is at the top.
  */
-export function CardDetail({ cardId, mode }: CardDetailProps) {
+export function CardDetail({ cardId, mode, clipActive = true }: CardDetailProps) {
   const titleId = useId();
   const card = cards.find((c) => c.id === cardId);
+  const move = card?.move ?? null;
+
+  // Hue hand-off (D-THEME-3): the open card lights the ambient layer in its
+  // move hue, as the feed's active card does. It is left in place on close;
+  // the feed re-publishes its active card when it shows again.
+  useEffect(() => {
+    if (move) publishMoveHue(move);
+  }, [move]);
+
+  // One moving thing at a time: the drift holds still while the clip shows.
+  useEffect(() => {
+    const root = document.documentElement;
+    root.dataset.ambient = "still";
+    return () => {
+      if (root.dataset.ambient === "still") delete root.dataset.ambient;
+    };
+  }, []);
+
   if (!card) return null;
 
   if (mode === "sheet") {
@@ -66,7 +86,7 @@ export function CardDetail({ cardId, mode }: CardDetailProps) {
           </DrawerTitle>
         </div>
         <DrawerContent className="pb-3">
-          <CardBack card={card} clipActive />
+          <CardBack card={card} clipActive={clipActive} />
         </DrawerContent>
       </section>
     );
@@ -87,7 +107,7 @@ export function CardDetail({ cardId, mode }: CardDetailProps) {
       >
         {card.cue}
       </h2>
-      <CardBack card={card} clipActive />
+      <CardBack card={card} clipActive={clipActive} />
     </section>
   );
 }
