@@ -235,7 +235,7 @@ Real `backdrop-filter` blur is used only on chrome that never rotates: the nav p
 5. **Specular sweep**: a single faint highlight crossing the card during the flip, once.
 Restraint rules: one moving thing at a time (the clip, or the flip, or the drift, never a busy screen); no WebGL in the default path; no refraction on content. P3 may evaluate one 21st.dev grain/gradient component and one glass component against this direction; they are adopted only if they are calmer than the CSS version.
 
-**D-THEME-3. Hue is data-driven.** Each move gets a hue from a pure function of its id (hash to a slot on a curated OKLCH hue ring, fixed lightness and chroma). New moves from the content pipeline get a hue with no UI change. The hue feeds the ambient glow, the move tag tint and the response bubble tint, and nothing else. Screens publish it through one CSS custom property on the root; the design system owner owns the helper.
+**D-THEME-3. Hue is data-driven (revised in P3-2).** Each known move in `moves.ts` is pinned to its own slot on a curated OKLCH ring of ten clearly distinct hues (20, 50, 80, 140, 170, 205, 245, 275, 305, 340; fixed lightness and chroma), so no two starter moves look alike (Gate 2 carry-over). A move that is not pinned, such as a new one from the content pipeline, gets a ring hue from a stable hash of its id with no UI change. It may share a hue until the design system owner pins it. The hue feeds the ambient glow, the move tag tint and the response bubble tint, and nothing else. Screens publish it through one CSS custom property on the root; the design system owner owns the helper.
 
 **D-THEME-4. Type.** Geist (already wired). The cue is the largest thing in the product. Sizes come in Phase 2.
 
