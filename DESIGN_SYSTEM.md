@@ -178,7 +178,7 @@ Pressed buttons scale to 0.97; under reduced motion they do not scale. Reduced m
 
 | Primitive | Variants added | Screen element |
 |---|---|---|
-| `Button` | `glass` (in-card control, no blur), `chrome` (blurred), `tint` (hue pill), `quiet` (text action); sizes `circle` (44 px), `circle-lg` (48 px), `pill` (44 px), `pill-sm` (36 px). Existing variants and sizes are kept. Focus ring, soft press, 40% disabled. | Heart and mute (`glass circle`), desktop previous / next (`chrome circle-lg`), sheet close (`glass circle`), "Clear search" (`quiet pill-sm`) |
+| `Button` | `glass` (in-card control, no blur), `chrome` (blurred), `tint` (hue pill), `quiet` (text action); sizes `circle` (44 px), `circle-lg` (48 px), `pill` (44 px), `pill-sm` (36 px). Existing variants and sizes are kept. Focus ring, soft press, 40% disabled. | Heart and mute (`glass circle`), desktop previous / next (`chrome circle-lg`), sheet close (`glass circle`), "Clear search" (`quiet pill`, 44 px, D-SAVED-9), "Back to cue" (`glass pill-sm` painted at 36 px inside a 44 px hit box, A-9) |
 | `Badge` | `move` (26 px `hue-tag` pill), `glass` | Card back move tag; Saved group label if a pill is wanted |
 | `Input` | `variant="field"` (default, `glass-control` pill, 48 px, no blur), `variant="chrome"` (blurred). The blur makes the field a stacking context, so a leading icon drawn before it needs `z-10`. | Saved search |
 | `Skeleton` | Faint glass fill with a slow shimmer, stopped under reduced motion | Feed skeleton card, Saved skeleton rows, clip loading |
