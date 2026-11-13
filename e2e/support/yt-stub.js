@@ -19,6 +19,8 @@
  *                 blocks sound without a gesture (CL-13)
  *   errorIds      ids that fire onError after ready (default ["BROKEN_CLIP"])
  *   errorCode     code for those errors (default 150)
+ *   stallIds      ids that become ready but never reach PLAYING; they stay
+ *                 BUFFERING (D-CLIP-12 playback-start timeout). Default []
  *   rate          seconds of video per second of wall time (default 1)
  * Script load failure (CL-16) is done by the test: route abort.
  *
@@ -53,6 +55,7 @@
       blockUnmute: !!c.blockUnmute,
       errorIds: Array.isArray(c.errorIds) ? c.errorIds : ["BROKEN_CLIP"],
       errorCode: typeof c.errorCode === "number" ? c.errorCode : 150,
+      stallIds: Array.isArray(c.stallIds) ? c.stallIds : [],
       rate: typeof c.rate === "number" ? c.rate : 1,
     };
   }
@@ -193,7 +196,7 @@
     }
     if (this._autoplay && this.record.state === STATE.UNSTARTED) {
       this._setState(STATE.BUFFERING);
-      this._setState(STATE.PLAYING);
+      if (!this._stalled()) this._setState(STATE.PLAYING);
     }
   };
 
@@ -212,9 +215,17 @@
   };
 
   // ---- YT.Player API -----------------------------------------------------
+  Player.prototype._stalled = function () {
+    return this._cfg.stallIds.indexOf(this.record.videoId) !== -1;
+  };
+
   Player.prototype.playVideo = function () {
     this._log("playVideo", arguments);
     if (!this.record.ready) return;
+    if (this._stalled()) {
+      this._setState(STATE.BUFFERING);
+      return;
+    }
     this._setState(STATE.PLAYING);
   };
   Player.prototype.pauseVideo = function () {

@@ -144,6 +144,8 @@ The iframe stays interactive (tap inside toggles play/pause natively and shows Y
 
 **D-CLIP-11. Source line.** `card.source`, when present, is shown as small secondary text at the left of the action row. It is the attribution for the clip.
 
+**D-CLIP-12. Playback-start timeout.** After each play request (ready, the ENDED backup, the unmute fallback) the player must reach PLAYING within 8 s, or the clip goes to `error` and shows the fallback (a player can be ready yet stuck between UNSTARTED and BUFFERING); the timer is cleared on PLAYING, PAUSED, error and teardown.
+
 ---
 
 ## 4. Saves
