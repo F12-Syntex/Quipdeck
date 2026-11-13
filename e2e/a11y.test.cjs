@@ -9,7 +9,6 @@
  */
 const test = require("node:test");
 const assert = require("node:assert/strict");
-const fs = require("node:fs");
 const path = require("node:path");
 const { execSync } = require("node:child_process");
 const { chromium } = require("playwright");
@@ -80,12 +79,6 @@ async function open(opts = {}) {
 // ---- feed helpers ----
 const activeId = (page) =>
   page.evaluate((s) => document.querySelector(s)?.getAttribute("data-card-id") ?? null, ACTIVE);
-const domOrder = (page) =>
-  page.evaluate(() =>
-    [...document.querySelectorAll('[data-testid="feed"] [data-testid="card"]')].map((c) =>
-      c.getAttribute("data-card-id"),
-    ),
-  );
 async function settled(page) {
   await page.waitForFunction(
     () => {
@@ -173,7 +166,6 @@ async function runAxe(page, options = {}) {
   await page.addScriptTag({ path: AXE_PATH });
   return page.evaluate(
     async (options) =>
-      // eslint-disable-next-line no-undef
       axe.run(document, options).then((r) => ({
         violations: r.violations.map((v) => ({
           id: v.id,
