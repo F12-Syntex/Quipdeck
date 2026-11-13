@@ -30,6 +30,11 @@ export type ClipControllerOptions = {
   onMuted: (muted: boolean) => void;
   /** No `onReady` within this time is an error (D-CLIP-8). Default 8000. */
   readyTimeoutMs?: number;
+  /**
+   * After a play request (ready, ENDED backup, unmute fallback), PLAYING must
+   * follow within this time or it is an error (D-CLIP-12). Default 8000.
+   */
+  playTimeoutMs?: number;
   /** Accessible title for the iframe, e.g. "Clip: <cue>". */
   title?: string;
 };
@@ -40,6 +45,7 @@ export type ClipController = {
 };
 
 export const READY_TIMEOUT_MS = 8000;
+export const PLAY_TIMEOUT_MS = 8000;
 export const LOOP_POLL_MS = 250;
 /** Seek back this many seconds before `end`, so the end screen never shows. */
 export const LOOP_LEAD_S = 0.15;
@@ -79,6 +85,7 @@ export function createClipController(
     onState,
     onMuted,
     readyTimeoutMs = READY_TIMEOUT_MS,
+    playTimeoutMs = PLAY_TIMEOUT_MS,
     title,
   } = options;
 
@@ -90,6 +97,7 @@ export function createClipController(
   let readyTimer: ReturnType<typeof setTimeout> | null = null;
   let pollTimer: ReturnType<typeof setInterval> | null = null;
   let verifyTimer: ReturnType<typeof setTimeout> | null = null;
+  let playTimer: ReturnType<typeof setTimeout> | null = null;
 
   const setState = (next: ClipControllerState) => {
     if (destroyed || state === next) return;
@@ -110,6 +118,11 @@ export function createClipController(
   const clearReadyTimer = () => {
     if (readyTimer !== null) clearTimeout(readyTimer);
     readyTimer = null;
+  };
+
+  const clearPlayTimer = () => {
+    if (playTimer !== null) clearTimeout(playTimer);
+    playTimer = null;
   };
 
   /** Calls a player method, swallowing errors from a half-torn-down player. */
@@ -140,6 +153,20 @@ export function createClipController(
     pollTimer = setInterval(tick, LOOP_POLL_MS);
   };
 
+  /**
+   * Requests playback and arms the start deadline (D-CLIP-12). Armed before
+   * the call, because a player may report PLAYING synchronously.
+   */
+  const requestPlay = (fn: (p: YTPlayer) => void) => {
+    if (destroyed || !player) return;
+    clearPlayTimer();
+    playTimer = setTimeout(() => {
+      playTimer = null;
+      fail();
+    }, playTimeoutMs);
+    call(fn);
+  };
+
   /** Unmute, then check it took; if not, play muted and say so (D-CLIP-7). */
   const attemptUnmute = () => {
     if (destroyed || !player || !ready) return;
@@ -162,7 +189,7 @@ export function createClipController(
       if (stillMuted || (wasPlaying && paused)) {
         onMuted(true);
         call((p) => p.mute());
-        if (wasPlaying) call((p) => p.playVideo());
+        if (wasPlaying) requestPlay((p) => p.playVideo());
       }
     }, UNMUTE_VERIFY_MS);
   };
@@ -177,6 +204,7 @@ export function createClipController(
     if (destroyed) return;
     destroyed = true;
     clearReadyTimer();
+    clearPlayTimer();
     stopPoll();
     cancelVerify();
     releasePlayerSlot(teardown);
@@ -219,12 +247,13 @@ export function createClipController(
           ready = true;
           clearReadyTimer();
           call((p) => p.mute());
-          call((p) => p.playVideo());
+          requestPlay((p) => p.playVideo());
         },
         onStateChange: (event) => {
           if (destroyed) return;
           switch (event.data) {
             case PlayerState.PLAYING:
+              clearPlayTimer();
               setState("playing");
               startPoll();
               if (!autoUnmuteTried) {
@@ -233,13 +262,16 @@ export function createClipController(
               }
               break;
             case PlayerState.PAUSED:
+              // The player answered (a user tap or a blocked unmute); a
+              // paused clip is not a stalled one.
+              clearPlayTimer();
               stopPoll();
               setState("paused");
               break;
             case PlayerState.ENDED:
               // Backup for a missed poll: restart the window (D-CLIP-5).
               stopPoll();
-              call((p) =>
+              requestPlay((p) =>
                 p.loadVideoById({
                   videoId: clip.youtubeId,
                   startSeconds: clip.start,

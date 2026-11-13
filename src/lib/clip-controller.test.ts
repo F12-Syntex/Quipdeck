@@ -3,6 +3,7 @@ import {
   buildPlayerVars,
   createClipController,
   LOOP_POLL_MS,
+  PLAY_TIMEOUT_MS,
   READY_TIMEOUT_MS,
   UNMUTE_VERIFY_MS,
   type ClipControllerOptions,
@@ -23,6 +24,8 @@ import {
 type FakeBehaviour = {
   /** `unMute()` pauses and stays muted, as a browser blocking sound does. */
   blockUnmute?: boolean;
+  /** `playVideo()` buffers forever and never reaches PLAYING. */
+  stallPlay?: boolean;
 };
 
 class FakePlayer {
@@ -66,6 +69,10 @@ class FakePlayer {
   // YT.Player API ---------------------------------------------------------
   playVideo() {
     this.guard("playVideo");
+    if (FakePlayer.behaviour.stallPlay) {
+      this.fireState(PlayerState.BUFFERING);
+      return;
+    }
     this.fireState(PlayerState.PLAYING);
   }
   pauseVideo() {
@@ -453,5 +460,73 @@ describe("clip controller: teardown (D-CLIP-6)", () => {
     expect(a.player.calls.length).toBe(before);
     b.controller.destroy();
     expect(hasLivePlayer()).toBe(false);
+  });
+});
+
+describe("clip controller: playback-start timeout (D-CLIP-12)", () => {
+  it("ready but never PLAYING -> error after the deadline", () => {
+    FakePlayer.behaviour.stallPlay = true;
+    const { player, states, mount } = setup();
+    player.fireReady();
+    player.fireState(PlayerState.UNSTARTED);
+    player.fireState(PlayerState.BUFFERING);
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS - 1);
+    expect(states).toEqual(["loading"]);
+    vi.advanceTimersByTime(1);
+    expect(states).toEqual(["loading", "error"]);
+    expect(player.destroyed).toBe(true);
+    expect(mount.children).toHaveLength(0);
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("PLAYING before the deadline -> no error", () => {
+    FakePlayer.behaviour.stallPlay = true;
+    const { player, states } = setup();
+    player.fireReady();
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS - 100);
+    player.fireState(PlayerState.PLAYING);
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS * 2);
+    expect(states).toEqual(["loading", "playing"]);
+    expect(player.destroyed).toBe(false);
+  });
+
+  it("re-arms on each play request (ENDED backup that stalls)", () => {
+    const { player, states } = setup();
+    startPlaying(player);
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS * 2);
+    expect(states).toEqual(["loading", "playing"]);
+    // ENDED -> loadVideoById; the fake does not report PLAYING after it.
+    player.fireState(PlayerState.ENDED);
+    player.fireState(PlayerState.BUFFERING);
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS);
+    expect(states.at(-1)).toBe("error");
+  });
+
+  it("custom playTimeoutMs is honoured", () => {
+    FakePlayer.behaviour.stallPlay = true;
+    const { player, states } = setup({ playTimeoutMs: 1000 });
+    player.fireReady();
+    vi.advanceTimersByTime(1000);
+    expect(states.at(-1)).toBe("error");
+  });
+
+  it("a pause before PLAYING clears the deadline", () => {
+    FakePlayer.behaviour.stallPlay = true;
+    const { player, states } = setup();
+    player.fireReady();
+    player.fireState(PlayerState.PAUSED);
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS * 2);
+    expect(states).toEqual(["loading", "paused"]);
+  });
+
+  it("destroy clears the deadline", () => {
+    FakePlayer.behaviour.stallPlay = true;
+    const { controller, player, states } = setup();
+    player.fireReady();
+    expect(vi.getTimerCount()).toBe(1);
+    controller.destroy();
+    expect(vi.getTimerCount()).toBe(0);
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS * 2);
+    expect(states).toEqual(["loading"]);
   });
 });
