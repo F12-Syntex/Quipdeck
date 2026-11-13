@@ -1,4 +1,5 @@
 import { HeartIcon } from "lucide-react";
+import { Button } from "@/components/ui/button";
 
 /**
  * Nothing saved (SL-9). Centred in the space below the title; no search, no
@@ -13,9 +14,11 @@ export function SavedEmpty({ inColumn = false }: { inColumn?: boolean }) {
         inColumn ? "" : "min-h-[50dvh]"
       }`}
     >
-      <HeartIcon aria-hidden="true" className="size-8" />
-      <p className="text-lg">Nothing saved yet</p>
-      <p className="text-sm">
+      <span className="mb-2 flex size-14 items-center justify-center rounded-full glass-control">
+        <HeartIcon aria-hidden="true" className="size-6 text-fg-secondary" />
+      </span>
+      <p className="text-heading text-fg-primary">Nothing saved yet</p>
+      <p className="max-w-[30ch] text-body text-fg-secondary">
         <span className="pointer-fine:hidden">Tap</span>
         <span className="hidden pointer-fine:inline">Click</span> the heart on
         a card to keep it here.
@@ -31,15 +34,12 @@ export function SavedNoResults({ onClear }: { onClear: () => void }) {
       data-testid="saved-no-results"
       className="flex flex-col items-center gap-2 py-16 text-center"
     >
-      <p className="text-lg">No matches</p>
-      <p className="text-sm">Try a different word.</p>
-      <button
-        type="button"
-        onClick={onClear}
-        className="mt-2 min-h-11 border border-neutral-700 px-4"
-      >
+      <p className="text-heading text-fg-primary">No matches</p>
+      <p className="text-body text-fg-secondary">Try a different word.</p>
+      {/* `pill` (44 px), not `pill-sm`: the touch-target floor (A-9). */}
+      <Button variant="quiet" size="pill" onClick={onClear} className="mt-2">
         Clear search
-      </button>
+      </Button>
     </div>
   );
 }

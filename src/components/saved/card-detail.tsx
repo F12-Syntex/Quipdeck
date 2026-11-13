@@ -4,7 +4,9 @@ import { useId } from "react";
 import { XIcon } from "lucide-react";
 import { cards } from "@/content";
 import { CardBack } from "@/components/card/card-back";
-import { SheetClose, SheetTitle } from "@/components/ui/sheet";
+import { Button } from "@/components/ui/button";
+import { DrawerClose, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
+import { moveHueStyle } from "@/lib/move-hue";
 
 export type CardDetailProps = {
   cardId: string;
@@ -12,14 +14,25 @@ export type CardDetailProps = {
   mode: "sheet" | "pane";
 };
 
+/*
+ * The title lines up with the card content's left edge: `CardBack` insets
+ * its content by 16 px (`px-4`, 12 px in its compact tier at 700 px tall or
+ * less), so the title row carries the same inset (Gate 1 carry-over).
+ * The hue is scoped to the card's own move, so its tag, response bubble
+ * and focus ring match the feed (D-THEME-3).
+ */
+const TITLE_INSET = "px-4 [@media(max-height:700px)]:px-3";
+
 /**
  * One saved card, not a flip card (D-SAVED-6): the cue as title, then the
  * same `CardBack` content as the feed. The card is resolved from all cards,
  * not from the saved list, so unsaving keeps it open (D-SAVE-6).
  *
- * In "sheet" mode it must be rendered inside the Saved sheet (a Base UI
- * Dialog): the close button comes first in DOM order and the cue is the
- * dialog title, which gives the dialog its accessible name (OV-5).
+ * In "sheet" mode it must be rendered inside the Saved drawer (D-SAVED-8):
+ * the close button comes first in DOM order and the cue is the drawer title,
+ * which gives the dialog its accessible name (OV-5). The header stays put;
+ * the card scrolls in `DrawerContent`, which holds off the swipe until it
+ * is at the top.
  */
 export function CardDetail({ cardId, mode }: CardDetailProps) {
   const titleId = useId();
@@ -32,19 +45,29 @@ export function CardDetail({ cardId, mode }: CardDetailProps) {
         data-testid="card-detail"
         data-card-id={card.id}
         data-mode="sheet"
-        className="flex w-full flex-col gap-3"
+        style={moveHueStyle(card.move)}
+        className="hue-scope flex min-h-0 w-full flex-1 flex-col"
       >
         {/* Close is first in the DOM, drawn on the right (row-reverse). */}
-        <div className="flex flex-row-reverse items-start justify-between gap-3">
-          <SheetClose className="flex size-11 shrink-0 items-center justify-center border border-neutral-700">
-            <XIcon aria-hidden="true" className="size-5" />
-            <span className="sr-only">Close</span>
-          </SheetClose>
-          <SheetTitle className="min-w-0 flex-1 pt-2 text-lg font-normal leading-snug">
+        <div
+          className={`flex shrink-0 flex-row-reverse items-start gap-3 pb-1 ${TITLE_INSET}`}
+        >
+          <DrawerClose
+            render={<Button variant="glass" size="circle" aria-label="Close" />}
+          >
+            <XIcon aria-hidden="true" />
+          </DrawerClose>
+          {/* `text-heading` is repeated on purpose: the class merge treats
+              the custom size and `text-fg-primary` as one group and keeps
+              only the last, so DrawerTitle's own size is dropped. The
+              colour is inherited from the drawer surface. */}
+          <DrawerTitle className="min-w-0 flex-1 pt-2.5 text-heading">
             {card.cue}
-          </SheetTitle>
+          </DrawerTitle>
         </div>
-        <CardBack card={card} clipActive />
+        <DrawerContent className="pb-3">
+          <CardBack card={card} clipActive />
+        </DrawerContent>
       </section>
     );
   }
@@ -55,9 +78,13 @@ export function CardDetail({ cardId, mode }: CardDetailProps) {
       data-card-id={card.id}
       data-mode="pane"
       aria-labelledby={titleId}
-      className="mx-auto flex w-full max-w-[560px] flex-col gap-3 p-4"
+      style={moveHueStyle(card.move)}
+      className="hue-scope mx-auto flex w-full max-w-[560px] flex-col gap-1 p-4"
     >
-      <h2 id={titleId} className="text-lg leading-snug">
+      <h2
+        id={titleId}
+        className={`pt-4 text-heading text-balance text-fg-primary ${TITLE_INSET}`}
+      >
         {card.cue}
       </h2>
       <CardBack card={card} clipActive />

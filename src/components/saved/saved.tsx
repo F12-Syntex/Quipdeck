@@ -6,6 +6,7 @@ import { LiveRegion } from "@/components/card/live-region";
 import { cards, groupByMove, searchCards, type WitCard } from "@/content";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useSavedIds } from "@/lib/saves-store";
+import { Skeleton } from "@/components/ui/skeleton";
 import { CardDetail } from "./card-detail";
 import { DetailSheet } from "./detail-sheet";
 import { SavedEmpty, SavedNoResults } from "./saved-states";
@@ -16,7 +17,7 @@ import { SavedSearch } from "./saved-search";
 const FRAME =
   "mx-auto w-full max-w-[560px] px-4 pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+84px)] lg:max-w-[1200px] lg:px-6 lg:pt-[88px] lg:pb-6";
 
-const TITLE = "py-2 text-2xl";
+const TITLE = "py-2 text-title text-fg-primary outline-none";
 
 const cardById = new Map(cards.map((c) => [c.id, c]));
 
@@ -28,12 +29,22 @@ export function SavedFallback() {
   return (
     <div className={FRAME}>
       <h1 className={TITLE}>Saved</h1>
-      <div data-testid="saved-skeleton" className="mt-6 lg:max-w-[400px]">
-        <div className="mb-2 h-4 w-32 border border-neutral-800" />
-        <div className="border border-neutral-700">
-          <div className="h-16 border-b border-neutral-800" />
-          <div className="h-16 border-b border-neutral-800" />
-          <div className="h-16" />
+      <div
+        data-testid="saved-skeleton"
+        aria-hidden="true"
+        className="mt-6 lg:max-w-[400px]"
+      >
+        <Skeleton className="mb-2.5 h-[26px] w-36 rounded-pill" />
+        <div className="rounded-group glass-control">
+          {[0, 1, 2].map((i) => (
+            <div
+              key={i}
+              className="flex min-h-16 flex-col justify-center gap-2 border-b border-hairline px-4 py-3 last:border-b-0"
+            >
+              <Skeleton className="h-3.5 w-4/5 rounded-pill" />
+              <Skeleton className="h-3.5 w-1/2 rounded-pill" />
+            </div>
+          ))}
         </div>
       </div>
     </div>
@@ -191,7 +202,7 @@ export function Saved() {
       {desktop ? (
         <div
           ref={paneRef}
-          className="sticky top-[88px] h-[calc(100dvh-112px)] overflow-y-auto border border-neutral-700"
+          className="sticky top-[88px] h-[calc(100dvh-112px)] overflow-y-auto overscroll-contain rounded-pane glass-chrome-strong"
         >
           {paneId ? (
             <CardDetail key={paneId} cardId={paneId} mode="pane" />
@@ -200,7 +211,9 @@ export function Saved() {
               data-testid="detail-placeholder"
               className="flex h-full items-center justify-center p-6 text-center"
             >
-              <p>Choose a card to replay it.</p>
+              <p className="text-body text-fg-tertiary">
+                Choose a card to replay it.
+              </p>
             </div>
           )}
         </div>
