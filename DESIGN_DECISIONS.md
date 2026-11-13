@@ -279,3 +279,6 @@ Nothing below ships. Each was considered and rejected; items marked (board) were
 **D-TEST-4. Hidden routes.** Because of Activity (F2) the feed's DOM exists while Saved is shown. Every locator is visibility-scoped (`getByRole`, `:visible`). Components use `useId()` for ids so two instances of `CardBack` never collide.
 
 **D-TEST-5. Real playback** is checked by hand outside the sandbox on iOS Safari, Android Chrome and one desktop browser before release (PLAN, risks R1 and R2).
+
+
+**D-FEED-11. Wheel paging (lead, after P1-6).** CSS `scroll-snap-stop: always` does not stop Chromium skipping cards on a large wheel delta, and a single 100-120 px notch snaps back to the same card. The feed gets a JS wheel handler on pointer-fine devices: accumulate `deltaY` to about 40 px, move one card, then ignore wheel input until scrolling settles. Touch scrolling is untouched. Owned by P4-4.
