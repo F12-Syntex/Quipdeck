@@ -144,7 +144,11 @@ The iframe stays interactive (tap inside toggles play/pause natively and shows Y
 
 **D-CLIP-11. Source line.** `card.source`, when present, is shown as small secondary text at the left of the action row. It is the attribution for the clip.
 
-**D-CLIP-12. Playback-start timeout.** After each play request (ready, the ENDED backup, the unmute fallback) the player must reach PLAYING within 8 s, or the clip goes to `error` and shows the fallback (a player can be ready yet stuck between UNSTARTED and BUFFERING); the timer is cleared on PLAYING, PAUSED, error and teardown.
+**D-CLIP-12. Playback-start timeout.** Each play request (ready, the ENDED backup, the unmute fallback) arms a check 8 s later. The check is cleared on PLAYING, PAUSED, error and teardown. If it fires, it reads `getPlayerState()`:
+- BUFFERING: a slow network, not a dead player. Re-check every 1 s while it is still buffering, up to 25 s after the play request, then `error`.
+- UNSTARTED or CUED: autoplay was blocked (for example iOS Low Power Mode). The clip goes to `paused` and keeps the player, visible, so YouTube's own play button shows. Nothing of ours covers it (D-CLIP-9). A tap reaches PLAYING and the normal flow resumes (loop poll, D-CLIP-7 unmute).
+- Anything else, or an unreadable player: `error`, the player is destroyed and the fallback shows (D-CLIP-8).
+Separately, when the single-player guard (D-CLIP-6) evicts a controller, the evicted controller reports `idle`, so its box never keeps a stale `playing`.
 
 ---
 

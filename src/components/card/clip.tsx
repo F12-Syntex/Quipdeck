@@ -94,6 +94,9 @@ export function Clip({ clip, title, active }: ClipProps) {
   }, [muted]);
 
   const state: ClipState = active ? phase : "idle";
+  // The player is shown whenever it can be tapped: `paused` includes a
+  // blocked autoplay (D-CLIP-12), where YouTube's own play button must be
+  // visible and nothing of ours may cover it (D-CLIP-9).
   const live = state === "playing" || state === "paused";
 
   return (
