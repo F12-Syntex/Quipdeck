@@ -1,16 +1,14 @@
 "use client";
 
+import { Button } from "@/components/ui/button";
+
 export default function Error({ retry }: { error: unknown; retry: () => void }) {
   return (
-    <main className="flex min-h-dvh w-full flex-col items-center justify-center gap-3 p-6 text-center">
-      <p>Something went wrong.</p>
-      <button
-        type="button"
-        onClick={() => retry()}
-        className="min-h-11 rounded border border-neutral-600 px-4"
-      >
+    <main className="relative z-0 flex min-h-dvh w-full flex-col items-center justify-center gap-5 px-6 pt-[env(safe-area-inset-top)] pb-[calc(env(safe-area-inset-bottom)+72px)] text-center">
+      <p className="text-heading text-fg-primary">Something went wrong.</p>
+      <Button variant="chrome" size="pill" onClick={() => retry()}>
         Reload
-      </button>
+      </Button>
     </main>
   );
 }
