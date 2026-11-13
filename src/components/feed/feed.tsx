@@ -11,6 +11,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { scrollBehavior } from "@/components/ui/motion";
 import { useMediaQuery } from "@/hooks/use-media-query";
 import { useActiveId, useVisitOrder, visit } from "@/lib/visit-store";
+import { preloadYouTubeApi } from "@/lib/youtube";
 import { FeedChrome } from "./feed-chrome";
 import { FeedSlide } from "./feed-slide";
 import { createWheelPager } from "./wheel-pager";
@@ -99,6 +100,9 @@ export function Feed() {
   /** Target of a key or button navigation still scrolling into place. */
   const pendingRef = useRef<string | null>(null);
   const pendingTimerRef = useRef<number | undefined>(undefined);
+
+  // Request the IFrame API script at idle so the first flip is fast (D-CLIP-2).
+  useEffect(() => preloadYouTubeApi(), []);
 
   const slides = useCallback((): HTMLElement[] => {
     const scroller = scrollerRef.current;

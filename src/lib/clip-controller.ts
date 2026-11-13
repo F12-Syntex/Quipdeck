@@ -14,7 +14,16 @@ import {
  * after `destroy()`.
  */
 
-export type ClipControllerState = "loading" | "playing" | "paused" | "error";
+/**
+ * `idle` is emitted only when the single-player guard evicts this controller
+ * (another clip claimed the slot), so the box never keeps a stale `playing`.
+ */
+export type ClipControllerState =
+  | "idle"
+  | "loading"
+  | "playing"
+  | "paused"
+  | "error";
 
 export type ClipSpec = { youtubeId: string; start: number; end: number };
 
@@ -31,10 +40,18 @@ export type ClipControllerOptions = {
   /** No `onReady` within this time is an error (D-CLIP-8). Default 8000. */
   readyTimeoutMs?: number;
   /**
-   * After a play request (ready, ENDED backup, unmute fallback), PLAYING must
-   * follow within this time or it is an error (D-CLIP-12). Default 8000.
+   * After a play request (ready, ENDED backup, unmute fallback), the player
+   * state is checked this long after it (D-CLIP-12). Default 8000.
    */
   playTimeoutMs?: number;
+  /**
+   * While the player is still BUFFERING at that check, it is re-checked
+   * every `playRecheckMs` until this long after the play request, then it is
+   * an error (D-CLIP-12). Default 25000.
+   */
+  playMaxWaitMs?: number;
+  /** Re-check period while buffering past the first check. Default 1000. */
+  playRecheckMs?: number;
   /** Accessible title for the iframe, e.g. "Clip: <cue>". */
   title?: string;
 };
@@ -46,6 +63,8 @@ export type ClipController = {
 
 export const READY_TIMEOUT_MS = 8000;
 export const PLAY_TIMEOUT_MS = 8000;
+export const PLAY_MAX_WAIT_MS = 25000;
+export const PLAY_RECHECK_MS = 1000;
 export const LOOP_POLL_MS = 250;
 /** Seek back this many seconds before `end`, so the end screen never shows. */
 export const LOOP_LEAD_S = 0.15;
@@ -86,6 +105,8 @@ export function createClipController(
     onMuted,
     readyTimeoutMs = READY_TIMEOUT_MS,
     playTimeoutMs = PLAY_TIMEOUT_MS,
+    playMaxWaitMs = PLAY_MAX_WAIT_MS,
+    playRecheckMs = PLAY_RECHECK_MS,
     title,
   } = options;
 
@@ -154,16 +175,50 @@ export function createClipController(
   };
 
   /**
+   * Playback-start check (D-CLIP-12), `waited` ms after the play request.
+   * Still BUFFERING: wait longer, up to `playMaxWaitMs`. UNSTARTED or CUED:
+   * autoplay was blocked (e.g. iOS Low Power Mode), so show the player
+   * paused with YouTube's own play button; a tap there reaches PLAYING and
+   * the normal flow resumes. Anything else that never reached PLAYING is an
+   * error.
+   */
+  const checkPlayStart = (waited: number) => {
+    if (destroyed || !player) return;
+    let current: number;
+    try {
+      current = player.getPlayerState();
+    } catch {
+      fail();
+      return;
+    }
+    if (current === PlayerState.BUFFERING && waited < playMaxWaitMs) {
+      const step = Math.min(playRecheckMs, playMaxWaitMs - waited);
+      playTimer = setTimeout(() => {
+        playTimer = null;
+        checkPlayStart(waited + step);
+      }, step);
+      return;
+    }
+    if (current === PlayerState.UNSTARTED || current === PlayerState.CUED) {
+      stopPoll();
+      setState("paused");
+      return;
+    }
+    fail();
+  };
+
+  /**
    * Requests playback and arms the start deadline (D-CLIP-12). Armed before
    * the call, because a player may report PLAYING synchronously.
    */
   const requestPlay = (fn: (p: YTPlayer) => void) => {
     if (destroyed || !player) return;
     clearPlayTimer();
+    const first = Math.min(playTimeoutMs, playMaxWaitMs);
     playTimer = setTimeout(() => {
       playTimer = null;
-      fail();
-    }, playTimeoutMs);
+      checkPlayStart(first);
+    }, first);
     call(fn);
   };
 
@@ -207,7 +262,7 @@ export function createClipController(
     clearPlayTimer();
     stopPoll();
     cancelVerify();
-    releasePlayerSlot(teardown);
+    releasePlayerSlot(evict);
     const p = player;
     player = null;
     if (p) {
@@ -221,8 +276,21 @@ export function createClipController(
     while (mount.firstChild) mount.removeChild(mount.firstChild);
   }
 
+  /**
+   * Called by the single-player guard when another controller claims the
+   * slot: tear down and report `idle`, so the evicted box never keeps showing
+   * `playing` (D-CLIP-6). `destroy()` stays silent: its caller already knows.
+   * `setState` is a no-op once destroyed, so `onState` is called directly.
+   */
+  function evict() {
+    if (destroyed) return;
+    teardown();
+    state = "idle";
+    onState("idle");
+  }
+
   // One live player at a time: evict any previous owner before creating.
-  claimPlayerSlot(teardown);
+  claimPlayerSlot(evict);
 
   const host = mount.ownerDocument.createElement("div");
   mount.appendChild(host);
@@ -281,7 +349,8 @@ export function createClipController(
               break;
             default:
               // BUFFERING, CUED, UNSTARTED: keep the current state, so a
-              // seek inside the loop does not flash back to loading.
+              // seek inside the loop does not flash back to loading. A start
+              // that stays here is judged by `checkPlayStart`.
               break;
           }
         },

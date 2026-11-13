@@ -230,6 +230,11 @@ test("CL-15 a broken clip shows the fallback and keeps the text", async () => {
 test("CL-16 fallback when the API script cannot load", async () => {
   const { page } = await h.open({ stub: false });
   await page.route("**/iframe_api", (r) => r.abort());
+  // The feed preloads the script at idle (D-CLIP-2), possibly before the
+  // route above existed; reload so every request for it is blocked.
+  await page.reload();
+  await page.waitForSelector(h.FEED_READY);
+  await page.waitForSelector(h.ACTIVE);
   await h.flip(page);
   await h.waitClip(page, "error", 15000);
   await act(page, '[data-testid="clip-fallback"]').waitFor({ state: "visible" });
@@ -312,9 +317,14 @@ test("CL-21 privacy: only the API script before the first flip; embeds use nocoo
   await h.startHealthy(page, 0);
   await h.frame(page);
   const yt = /(youtube\.com|youtube-nocookie\.com|ytimg\.com|ggpht\.com|googlevideo\.com)/;
-  const before = requests.filter((u) => yt.test(u) && !/\/iframe_api(\?|$)/.test(u));
+  const api = /\/iframe_api(\?|$)/;
+  const before = requests.filter((u) => yt.test(u) && !api.test(u));
   assert.deepEqual(before, [], "no YouTube host contacted before the first flip, apart from the API script");
+  // D-CLIP-2: the script is requested at idle after the feed mounts, before any flip.
+  await page.waitForFunction(() => window.YT && window.YT.Player, null, { timeout: 8000 });
+  assert.equal(requests.filter((u) => api.test(u)).length, 1, "API script preloaded once");
   await h.flipAndPlay(page);
+  assert.equal(requests.filter((u) => api.test(u)).length, 1, "the flip reuses the preloaded script");
   // The stub frame paints from srcdoc, so assert on the embed URL the page built.
   const src = await page.locator(`${h.ACTIVE} iframe`).getAttribute("src");
   assert.match(src, /^https:\/\/www\.youtube-nocookie\.com\/embed\//);
@@ -356,6 +366,47 @@ test("CL-14 (Gate 4) the hue wash shows while the clip is loading and the stub i
   const diff = await h.pixelDiff(withWash, without);
   assert.ok(diff > 2, `mean pixel difference with vs without the wash is ${diff.toFixed(2)}`);
   assert.equal(await clip.getAttribute("data-clip-state"), "loading");
+});
+
+// D-CLIP-12: autoplay blocked (e.g. iOS Low Power Mode). The player stays,
+// visible and paused, so YouTube's own play button can be tapped.
+test("CL-17 (D-CLIP-12) blocked autoplay: paused with the player visible, no fallback; a tap plays", async () => {
+  const { page } = await h.open();
+  const id = await h.startHealthy(page, 0);
+  const blocked = h.card(id).clip.youtubeId;
+  await page.evaluate((ids) => {
+    window.__ytStubConfig = { blockedIds: ids };
+  }, [blocked]);
+  await h.flip(page);
+  await h.waitClip(page, "loading");
+  await page.waitForFunction(() => window.__yt.players.length > 0 && window.__yt.players[0].state === 5);
+  await h.waitClip(page, "paused", 14000);
+  const card = page.locator(h.ACTIVE);
+  assert.equal(await card.locator('[data-testid="clip-fallback"]').count(), 0, "no fallback");
+  assert.equal(await h.iframes(page), 1);
+  assert.equal(await page.evaluate(() => window.__yt.live()), 1, "the player is kept");
+  // Visible: the mount is fully opaque once its fade ends, and nothing of ours covers the frame.
+  await page.waitForFunction(
+    (s) => getComputedStyle(document.querySelector(`${s} iframe`).parentElement).opacity === "1",
+    h.ACTIVE,
+  );
+  const probe = await page.evaluate((s) => {
+    const f = document.querySelector(`${s} iframe`);
+    const r = f.getBoundingClientRect();
+    return {
+      w: r.width,
+      h: r.height,
+      hit: document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2) === f,
+      visibility: getComputedStyle(f).visibility,
+    };
+  }, h.ACTIVE);
+  assert.ok(probe.w >= 200 && probe.h >= 100, JSON.stringify(probe));
+  assert.equal(probe.visibility, "visible");
+  assert.ok(probe.hit, "the frame is not covered");
+  // The user taps YouTube's play button: the normal flow resumes.
+  await page.evaluate(() => window.__yt.setState(0, 1));
+  await h.waitClip(page, "playing");
+  assert.equal(await card.locator('[data-testid="clip-fallback"]').count(), 0);
 });
 
 // Real API (no stub): every sandbox video ends in error 150 (F4, D-TEST-5).

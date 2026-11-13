@@ -124,6 +124,38 @@ export function loadYouTubeApi(
   return promise;
 }
 
+/** Longest wait for an idle period before the preload runs anyway. */
+export const PRELOAD_IDLE_TIMEOUT_MS = 4000;
+/** Delay used where `requestIdleCallback` does not exist (Safari). */
+export const PRELOAD_FALLBACK_MS = 1500;
+
+let preloadStarted = false;
+
+/**
+ * Requests the IFrame API script at idle, so the first flip is fast
+ * (D-CLIP-2). Runs at most once per page load, through `loadYouTubeApi`, so
+ * it shares the one script request with any later activation. A failed
+ * preload is swallowed here; the next activation retries and reports it.
+ * Returns a cancel function for an effect cleanup (it only cancels a
+ * preload that has not started yet).
+ */
+export function preloadYouTubeApi(): () => void {
+  if (typeof window === "undefined" || preloadStarted) return () => {};
+  const run = () => {
+    if (preloadStarted) return;
+    preloadStarted = true;
+    loadYouTubeApi().catch(() => {});
+  };
+  if (typeof window.requestIdleCallback === "function") {
+    const handle = window.requestIdleCallback(run, {
+      timeout: PRELOAD_IDLE_TIMEOUT_MS,
+    });
+    return () => window.cancelIdleCallback(handle);
+  }
+  const timer = setTimeout(run, PRELOAD_FALLBACK_MS);
+  return () => clearTimeout(timer);
+}
+
 /* ------------------------------------------------------------------------ */
 /* Single-player guard (D-CLIP-6)                                            */
 /* ------------------------------------------------------------------------ */

@@ -21,7 +21,11 @@
  *   errorCode     code for those errors (default 150)
  *   stallIds      ids that become ready but never reach PLAYING; they stay
  *                 BUFFERING (D-CLIP-12 playback-start timeout). Default []
- *   rate          seconds of video per second of wall time (default 1)
+ *   blockedIds    ids whose autoplay is blocked (e.g. iOS Low Power Mode):
+ *                 ready, then CUED; a scripted playVideo() leaves them CUED.
+ *                 A user tap is simulated with `__yt.setState(index, 1)`.
+ *                 Default []
+ *   rate         seconds of video per second of wall time (default 1)
  * Script load failure (CL-16) is done by the test: route abort.
  *
  * Inspection, `window.__yt`:
@@ -56,6 +60,7 @@
       errorIds: Array.isArray(c.errorIds) ? c.errorIds : ["BROKEN_CLIP"],
       errorCode: typeof c.errorCode === "number" ? c.errorCode : 150,
       stallIds: Array.isArray(c.stallIds) ? c.stallIds : [],
+      blockedIds: Array.isArray(c.blockedIds) ? c.blockedIds : [],
       rate: typeof c.rate === "number" ? c.rate : 1,
     };
   }
@@ -195,6 +200,10 @@
       return;
     }
     if (this._autoplay && this.record.state === STATE.UNSTARTED) {
+      if (this._blocked()) {
+        this._setState(STATE.CUED);
+        return;
+      }
       this._setState(STATE.BUFFERING);
       if (!this._stalled()) this._setState(STATE.PLAYING);
     }
@@ -218,10 +227,17 @@
   Player.prototype._stalled = function () {
     return this._cfg.stallIds.indexOf(this.record.videoId) !== -1;
   };
+  Player.prototype._blocked = function () {
+    return this._cfg.blockedIds.indexOf(this.record.videoId) !== -1;
+  };
 
   Player.prototype.playVideo = function () {
     this._log("playVideo", arguments);
     if (!this.record.ready) return;
+    if (this._blocked()) {
+      this._setState(STATE.CUED);
+      return;
+    }
     if (this._stalled()) {
       this._setState(STATE.BUFFERING);
       return;

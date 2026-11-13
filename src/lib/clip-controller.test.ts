@@ -3,6 +3,7 @@ import {
   buildPlayerVars,
   createClipController,
   LOOP_POLL_MS,
+  PLAY_MAX_WAIT_MS,
   PLAY_TIMEOUT_MS,
   READY_TIMEOUT_MS,
   UNMUTE_VERIFY_MS,
@@ -26,6 +27,11 @@ type FakeBehaviour = {
   blockUnmute?: boolean;
   /** `playVideo()` buffers forever and never reaches PLAYING. */
   stallPlay?: boolean;
+  /**
+   * `playVideo()` moves to this state instead of PLAYING, as a browser that
+   * blocks autoplay leaves the player UNSTARTED or CUED.
+   */
+  blockPlayAt?: number;
 };
 
 class FakePlayer {
@@ -71,6 +77,10 @@ class FakePlayer {
     this.guard("playVideo");
     if (FakePlayer.behaviour.stallPlay) {
       this.fireState(PlayerState.BUFFERING);
+      return;
+    }
+    if (FakePlayer.behaviour.blockPlayAt !== undefined) {
+      this.fireState(FakePlayer.behaviour.blockPlayAt);
       return;
     }
     this.fireState(PlayerState.PLAYING);
@@ -461,22 +471,135 @@ describe("clip controller: teardown (D-CLIP-6)", () => {
     b.controller.destroy();
     expect(hasLivePlayer()).toBe(false);
   });
+
+  it("an evicted controller reports idle, never a stale playing", () => {
+    const a = setup();
+    startPlaying(a.player);
+    expect(a.states).toEqual(["loading", "playing"]);
+    const b = setup();
+    expect(a.states).toEqual(["loading", "playing", "idle"]);
+    expect(a.mount.children).toHaveLength(0);
+    expect(b.states).toEqual(["loading"]);
+    // Nothing more from the evicted one: later events and destroy are no-ops.
+    a.player.fireError(150);
+    a.controller.destroy();
+    expect(a.states).toEqual(["loading", "playing", "idle"]);
+    // The new owner still holds the slot; its own destroy releases it.
+    expect(hasLivePlayer()).toBe(true);
+    b.controller.destroy();
+    expect(hasLivePlayer()).toBe(false);
+    expect(b.states).toEqual(["loading"]);
+  });
 });
 
 describe("clip controller: playback-start timeout (D-CLIP-12)", () => {
-  it("ready but never PLAYING -> error after the deadline", () => {
+  it("still BUFFERING at the deadline -> extends, then error at the cap", () => {
     FakePlayer.behaviour.stallPlay = true;
     const { player, states, mount } = setup();
     player.fireReady();
     player.fireState(PlayerState.UNSTARTED);
     player.fireState(PlayerState.BUFFERING);
-    vi.advanceTimersByTime(PLAY_TIMEOUT_MS - 1);
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS);
+    // Buffering is a slow network, not a dead player: keep waiting.
+    expect(states).toEqual(["loading"]);
+    expect(player.destroyed).toBe(false);
+    vi.advanceTimersByTime(PLAY_MAX_WAIT_MS - PLAY_TIMEOUT_MS - 1);
     expect(states).toEqual(["loading"]);
     vi.advanceTimersByTime(1);
     expect(states).toEqual(["loading", "error"]);
     expect(player.destroyed).toBe(true);
     expect(mount.children).toHaveLength(0);
     expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("buffering past the deadline, then PLAYING -> playing, no error", () => {
+    FakePlayer.behaviour.stallPlay = true;
+    const { player, states } = setup();
+    player.fireReady();
+    vi.advanceTimersByTime(20000);
+    expect(states).toEqual(["loading"]);
+    player.fireState(PlayerState.PLAYING);
+    expect(vi.getTimerCount()).toBe(1); // only the loop poll is left
+    vi.advanceTimersByTime(PLAY_MAX_WAIT_MS * 2);
+    expect(states).toEqual(["loading", "playing"]);
+    expect(player.destroyed).toBe(false);
+  });
+
+  it.each([
+    ["CUED", PlayerState.CUED],
+    ["UNSTARTED", PlayerState.UNSTARTED],
+  ])(
+    "autoplay blocked (%s at the deadline) -> paused with the player kept, no error",
+    (_name, blockedState) => {
+      FakePlayer.behaviour.blockPlayAt = blockedState;
+      const { player, states, mount } = setup();
+      player.fireReady();
+      vi.advanceTimersByTime(PLAY_TIMEOUT_MS - 1);
+      expect(states).toEqual(["loading"]);
+      vi.advanceTimersByTime(1);
+      expect(states).toEqual(["loading", "paused"]);
+      // The player stays, so YouTube's own play button is there to tap.
+      expect(player.destroyed).toBe(false);
+      expect(mount.children).toHaveLength(1);
+      expect(hasLivePlayer()).toBe(true);
+      expect(vi.getTimerCount()).toBe(0);
+      vi.advanceTimersByTime(PLAY_MAX_WAIT_MS * 2);
+      expect(states).toEqual(["loading", "paused"]);
+    },
+  );
+
+  it("a tap after a blocked autoplay resumes the normal flow", () => {
+    FakePlayer.behaviour.blockPlayAt = PlayerState.CUED;
+    const { player, states, setStoreMuted } = setup();
+    setStoreMuted(false);
+    player.fireReady();
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS);
+    expect(states.at(-1)).toBe("paused");
+    // The user taps YouTube's play button.
+    player.fireState(PlayerState.BUFFERING);
+    player.fireState(PlayerState.PLAYING);
+    expect(states).toEqual(["loading", "paused", "playing"]);
+    // Loop poll runs and the visit's unmute preference is applied.
+    expect(player.calls).toContain("unMute");
+    player.time = 30;
+    vi.advanceTimersByTime(LOOP_POLL_MS);
+    expect(player.calls).toContain("seekTo(10)");
+  });
+
+  it("buffering that turns into CUED during the extension -> paused", () => {
+    FakePlayer.behaviour.stallPlay = true;
+    const { player, states } = setup();
+    player.fireReady();
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS + 2000);
+    expect(states).toEqual(["loading"]);
+    player.fireState(PlayerState.CUED);
+    vi.advanceTimersByTime(1000);
+    expect(states).toEqual(["loading", "paused"]);
+    expect(player.destroyed).toBe(false);
+  });
+
+  it("any other state at the deadline -> error and fallback", () => {
+    const { player, states, mount } = setup();
+    // Ready, but the player sits in a state that is neither playing,
+    // buffering nor blocked, without reporting it.
+    FakePlayer.behaviour.blockPlayAt = PlayerState.UNSTARTED;
+    player.fireReady();
+    player.playerState = 99;
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS);
+    expect(states).toEqual(["loading", "error"]);
+    expect(player.destroyed).toBe(true);
+    expect(mount.children).toHaveLength(0);
+  });
+
+  it("an unreadable player state at the deadline -> error", () => {
+    FakePlayer.behaviour.stallPlay = true;
+    const { player, states } = setup();
+    player.fireReady();
+    player.getPlayerState = () => {
+      throw new Error("gone");
+    };
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS);
+    expect(states).toEqual(["loading", "error"]);
   });
 
   it("PLAYING before the deadline -> no error", () => {
@@ -499,14 +622,30 @@ describe("clip controller: playback-start timeout (D-CLIP-12)", () => {
     player.fireState(PlayerState.ENDED);
     player.fireState(PlayerState.BUFFERING);
     vi.advanceTimersByTime(PLAY_TIMEOUT_MS);
+    expect(states.at(-1)).toBe("playing"); // still buffering: extended
+    vi.advanceTimersByTime(PLAY_MAX_WAIT_MS - PLAY_TIMEOUT_MS);
     expect(states.at(-1)).toBe("error");
   });
 
-  it("custom playTimeoutMs is honoured", () => {
+  it("ENDED backup blocked (CUED) -> paused, not error", () => {
+    const { player, states } = setup();
+    startPlaying(player);
+    player.fireState(PlayerState.ENDED);
+    player.fireState(PlayerState.CUED);
+    vi.advanceTimersByTime(PLAY_TIMEOUT_MS);
+    expect(states).toEqual(["loading", "playing", "paused"]);
+    expect(player.destroyed).toBe(false);
+  });
+
+  it("custom playTimeoutMs and playMaxWaitMs are honoured", () => {
     FakePlayer.behaviour.stallPlay = true;
-    const { player, states } = setup({ playTimeoutMs: 1000 });
+    const { player, states } = setup({ playTimeoutMs: 1000, playMaxWaitMs: 3000 });
     player.fireReady();
     vi.advanceTimersByTime(1000);
+    expect(states.at(-1)).toBe("loading");
+    vi.advanceTimersByTime(1999);
+    expect(states.at(-1)).toBe("loading");
+    vi.advanceTimersByTime(1);
     expect(states.at(-1)).toBe("error");
   });
 
@@ -528,5 +667,75 @@ describe("clip controller: playback-start timeout (D-CLIP-12)", () => {
     expect(vi.getTimerCount()).toBe(0);
     vi.advanceTimersByTime(PLAY_TIMEOUT_MS * 2);
     expect(states).toEqual(["loading"]);
+  });
+});
+
+describe("IFrame API preload at idle (D-CLIP-2)", () => {
+  type Idle = { cb: () => void; opts?: { timeout?: number } };
+
+  /** A fresh `youtube` module against a fake window and document. */
+  async function freshModule(withIdle: boolean) {
+    vi.resetModules();
+    const scripts: { src?: string; onerror?: () => void; remove(): void }[] = [];
+    const idle: Idle[] = [];
+    const win: Record<string, unknown> = {};
+    if (withIdle) {
+      win.requestIdleCallback = (cb: () => void, opts?: { timeout?: number }) =>
+        idle.push({ cb, opts });
+      win.cancelIdleCallback = (handle: number) => {
+        idle[handle - 1].cb = () => {};
+      };
+    }
+    vi.stubGlobal("window", win);
+    vi.stubGlobal("document", {
+      createElement: () => ({ remove() {} }),
+      head: { appendChild: (s: (typeof scripts)[number]) => scripts.push(s) },
+    });
+    const mod = await import("./youtube");
+    return { mod, scripts, idle };
+  }
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("requests the script once, at idle, and never again", async () => {
+    const { mod, scripts, idle } = await freshModule(true);
+    const cancel = mod.preloadYouTubeApi();
+    expect(scripts).toHaveLength(0); // nothing before idle
+    expect(idle).toHaveLength(1);
+    expect(idle[0].opts?.timeout).toBe(mod.PRELOAD_IDLE_TIMEOUT_MS);
+    idle[0].cb();
+    expect(scripts).toHaveLength(1);
+    expect(scripts[0].src).toBe(mod.YOUTUBE_API_SRC);
+    cancel(); // too late to cancel; harmless
+    // A remount does not schedule a second preload.
+    mod.preloadYouTubeApi();
+    expect(idle).toHaveLength(1);
+    // An activation shares the pending request.
+    void mod.loadYouTubeApi().catch(() => {});
+    expect(scripts).toHaveLength(1);
+    // A failed preload is swallowed (no unhandled rejection).
+    scripts[0].onerror?.();
+    await Promise.resolve();
+  });
+
+  it("a cancelled preload (effect cleanup) can be scheduled again", async () => {
+    const { mod, scripts, idle } = await freshModule(true);
+    mod.preloadYouTubeApi()();
+    idle[0].cb();
+    expect(scripts).toHaveLength(0);
+    mod.preloadYouTubeApi();
+    idle[1].cb();
+    expect(scripts).toHaveLength(1);
+  });
+
+  it("falls back to a timeout without requestIdleCallback", async () => {
+    const { mod, scripts } = await freshModule(false);
+    mod.preloadYouTubeApi();
+    vi.advanceTimersByTime(mod.PRELOAD_FALLBACK_MS - 1);
+    expect(scripts).toHaveLength(0);
+    vi.advanceTimersByTime(1);
+    expect(scripts).toHaveLength(1);
   });
 });
