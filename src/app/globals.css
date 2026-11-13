@@ -24,7 +24,7 @@
 @property --move-hue {
   syntax: "<number>";
   inherits: true;
-  initial-value: 265;
+  initial-value: 275;
 }
 
 @property --hue-glow {

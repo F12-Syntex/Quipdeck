@@ -8,8 +8,8 @@ import { Skeleton } from "@/components/ui/skeleton";
 import {
   flipCrossfade,
   flipSpring,
+  heartPop,
   heartScale,
-  heartSpring,
 } from "@/components/ui/motion";
 
 const CELL =
@@ -47,12 +47,12 @@ export function MotionDemos() {
       </div>
 
       <div className={CELL} data-testid="motion-heart">
-        <p className="text-label text-fg-secondary">heartSpring / heartScale</p>
+        <p className="text-label text-fg-secondary">heartPop / heartScale</p>
         <div className="flex h-20 items-center justify-center">
           <motion.div
             key={String(liked)}
             animate={reduced ? undefined : { scale: [...heartScale] }}
-            transition={heartSpring}
+            transition={heartPop}
           >
             <HeartIcon
               aria-hidden="true"

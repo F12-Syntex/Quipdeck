@@ -20,14 +20,28 @@ export const flipCrossfade = { duration: 0.15, ease: "linear" } as const;
 /** Specular sweep across the card during the flip, once. Removed under reduced motion. */
 export const specularSweep = { duration: 0.6, ease: [0.65, 0, 0.35, 1] } as const;
 
-/** Heart fill: 1 -> 1.18 -> 1. Under reduced motion the heart just changes state. */
-export const heartSpring = {
-  type: "spring",
-  stiffness: 520,
-  damping: 18,
-  mass: 0.6,
-} as const;
+/**
+ * Heart fill: 1 -> 1.18 -> 1 over 300 ms, on save only. Under reduced motion
+ * the heart just changes state. A tween, not a spring: framer-motion springs
+ * take two keyframes only (P3-2 replaced the P2 `heartSpring`).
+ */
 export const heartScale = [1, 1.18, 1] as const;
+export const heartPop: { duration: number; times: number[]; ease: [number, number, number, number] } = {
+  duration: 0.3,
+  times: [0, 0.4, 1],
+  ease: [0.22, 1, 0.36, 1],
+};
+
+/**
+ * Nav active capsule sliding between items (from 21st.dev 8343): critically
+ * damped, settles in about 300 ms, no overshoot. Instant under reduced motion.
+ */
+export const capsuleSpring = {
+  type: "spring",
+  stiffness: 420,
+  damping: 42,
+  mass: 1,
+} as const;
 
 /** Generic UI transitions (sheet rise, fades). */
 export const easeSoft = [0.22, 1, 0.36, 1] as const;

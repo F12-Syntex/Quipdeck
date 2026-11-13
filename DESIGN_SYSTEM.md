@@ -1,5 +1,7 @@
 # Quipdeck design system
 
+**Frozen after P3-2.** Changes go through the lead to the design system owner.
+
 Owner: design system owner (P2-1, P3-2). Source of truth: `src/app/globals.css` (tokens, recipes, ambient layer), `src/lib/move-hue.ts` (hue), `src/components/ui/motion.ts` (JS motion), `src/components/ui/*` (primitives). Decisions: `DESIGN_DECISIONS.md` D-THEME-1..5, D-FLIP-1..3.
 
 Direction: dark only, calm, rounded, glass. One signature idea, "one pane of glass, lit from behind": a still, near-black field with one soft glow tinted by the active move, a static grain, and glass that catches light at its rim. Nothing is loud and nothing moves without a reason.
@@ -33,22 +35,22 @@ Utilities: `text-fg-primary`, `text-fg-secondary`, `text-fg-tertiary`, `text-fg-
 
 ### Contrast pairs (D-THEME-5; input for `scripts/contrast.cjs`)
 
-Translucent surfaces are composited in sRGB over their worst case: the ambient glow peak (`--hue-glow` at its centre over `--surface-base-top`), then for card faces the painted glass at its lightest point (shade, top fill and the specular wash at full strength), for every hue on the ring. The table gives the lowest ratio over all twelve ring hues and the composite where it occurs. Floor: 4.5:1 for all text tokens (3:1 would be allowed for `text-cue*` and `text-title`, but they use `--fg-primary`). Gate 2 made the card glass lighter and brighter; to keep AA, `--glass-fill-top` went from 8.5% to 6% and `--fg-secondary` / `--fg-tertiary` were raised from L 0.85 / 0.78 to 0.88 / 0.82.
+Translucent surfaces are composited in sRGB over their worst case: the ambient glow peak (`--hue-glow` at its centre over `--surface-base-top`), then for card faces the painted glass at its lightest point (shade, top fill and the specular wash at full strength), for every hue on the ring. The table gives the lowest ratio over all ten ring hues and the composite where it occurs. Floor: 4.5:1 for all text tokens (3:1 would be allowed for `text-cue*` and `text-title`, but they use `--fg-primary`). Gate 2 made the card glass lighter and brighter; to keep AA, `--glass-fill-top` went from 8.5% to 6% and `--fg-secondary` / `--fg-tertiary` were raised from L 0.85 / 0.78 to 0.88 / 0.82.
 
 | Surface (composited, lightest point) | Hex | fg-primary | fg-secondary | fg-tertiary |
 |---|---|---|---|---|
 | `--surface-base-top` (page) | `#121417` | 16.93 | 12.86 | 10.57 |
 | `--surface-raised` / `--chrome-fill-solid` | `#1d1e22` | 15.29 | 11.61 | 9.55 |
-| `glass-chrome` over glow peak | `#16282a` | 14.04 | 10.67 | 8.77 |
-| `glass-paint` over glow peak (card face) | `#345455` | 7.60 | 5.77 | 4.74 |
-| `glass-control` on a card face | `#446163` | 6.11 | 4.64 | not allowed (3.82) |
-| `glass-control` on the page (`Input` field: text and placeholder) | `#1e4646` | 9.50 | 7.21 | 5.93 |
-| `glass-bubble` on a card face | `#426061` | 6.28 | 4.77 | not allowed (3.92) |
-| `hue-bubble` on a card face (chroma 0.14) | `#276362` | 6.30 | 4.79 | not allowed (3.94) |
+| `glass-chrome` over glow peak | `#16272d` | 14.05 | 10.68 | 8.78 |
+| `glass-chrome-strong` over glow peak (drawer, sheet) | `#161f24` | 15.29 | 11.61 | 9.55 |
+| Nav capsule (`--control-active` on `glass-chrome`) | `#3c4a4f` | 8.44 | 6.41 | not allowed (5.27) |
+| `glass-paint` over glow peak (card face) | `#34535a` | 7.62 | 5.79 | 4.76 |
+| `glass-control` on a card face | `#456167` | 6.13 | 4.66 | not allowed (3.83) |
+| `glass-control` on the page (`Input` field: text and placeholder) | `#1e454d` | 9.53 | 7.24 | 5.95 |
+| `glass-bubble` on a card face | `#435f66` | 6.30 | 4.78 | not allowed (3.93) |
+| `hue-bubble` on a card face (chroma 0.14) | `#28616b` | 6.35 | 4.83 | not allowed (3.97) |
 
-Other pairs: `hue-tag` text on its own fill (chroma 0.14), worst hue: 5.41. `--fg-inverse` on `--fg-primary`: 16.6. Focus ring on the lightest card face: 6.24; on the base: 13.25. Lowest enforced ratio: 4.64 (`--fg-secondary` on `glass-control` on a card face).
-
-Note: `scripts/contrast.cjs` reads every token above from `globals.css`, but still hardcodes the pre-Gate-2 `hue-tag` and `hue-bubble` formulas (chroma 0.11 and 0.1). The chroma 0.14 figures in this table come from the same model run with the new values.
+Other pairs: `hue-tag` text on its own fill (chroma 0.14), worst hue: 5.43. `--fg-inverse` on `--fg-primary`: 16.6. Focus ring on the lightest card face: 6.23; on the base: 13.25. Lowest enforced ratio: 4.66 (`--fg-secondary` on `glass-control` on a card face, hue 205). Every figure is the output of `node scripts/contrast.cjs`, which reads all tokens and recipe formulas live from `globals.css` and the ring from `move-hue.ts`.
 
 Rule: inside a control, a bubble or a tag that sits on a card face, use `--fg-primary` or `--fg-secondary`, never `--fg-tertiary`. A control on the page (the search field) may use `--fg-tertiary` (placeholder).
 
@@ -65,7 +67,7 @@ All are Tailwind utilities defined with `@utility` in `globals.css` and always e
 | `glass-control` | Small translucent control: white 8% fill, rim, hairline. No blur. | Heart, mute, the field variant of `Input`, `Button variant="glass"` |
 | `glass-bubble` | Neutral bubble: white 7%, rim, hairline. | Trigger line (other speaker) |
 | `hue-bubble` | Response bubble tinted by the move hue: `oklch(0.58 0.14 h / 0.24)`, rim, hue hairline `oklch(0.8 0.11 h / 0.22)`. | Response line (the witty one) |
-| `hue-tag` | Move tag: `oklch(0.62 0.14 h / 0.16)` fill, `oklch(0.9 0.06 h)` text, hue hairline `oklch(0.78 0.12 h / 0.3)`. Chroma was raised at Gate 2 so neighbouring hues (265, 290 and 315) separate, and the warm ones (15, 40 and 65) read as red, rust and amber rather than brown. | Card back move tag, `Badge variant="move"`, `Button variant="tint"` |
+| `hue-tag` | Move tag: `oklch(0.62 0.14 h / 0.16)` fill, `oklch(0.9 0.06 h)` text, hue hairline `oklch(0.78 0.12 h / 0.3)`. Chroma was raised at Gate 2 so neighbouring hues separate and the warm ones read as red, copper and amber rather than brown. | Card back move tag, `Badge variant="move"`, `Button variant="tint"` |
 | `hue-scope` | Re-declares every hue-derived token (`--glass-shade`, `--hue-glow`, `--hue-glow-soft`, `--hue-shadow`, `--focus-ring`) on the element, so a local `--move-hue` (`moveHueStyle`) retints all of them, not only the tag and bubble. | Showcase card frames; any element shown in a hue other than the root's |
 | `.ambient-frame` | An in-flow copy of the ambient base. Put `.ambient-glow`, `.ambient-vignette` and `.ambient-grain` inside it, and pair it with `hue-scope`. | Showcase card-mock frames |
 | `--specular-sweep` | A faint 105 degree highlight band (CSS gradient value). | One pass across the card during the flip (P4-2); removed under reduced motion |
@@ -74,8 +76,23 @@ Supporting tokens: `--chrome-rim`, `--glass-fill-top`, `--glass-fill-bottom`, `-
 
 ## 4. Move hue (D-THEME-3)
 
-- `src/lib/move-hue.ts`: `moveHue(moveId)` hashes the id (FNV-1a) to one slot of a 12-hue OKLCH ring: 15, 40, 65, 140, 165, 190, 215, 240, 265, 290, 315, 345. The ring skips the yellow-green band (about 75 to 135), which turns muddy at low lightness. Lightness and chroma are fixed by the tokens, so a new move gets a hue with no UI change. Unknown ids also get a ring hue. Collisions are accepted; the label carries identity. The current ten moves land on eight hues.
-- `--move-hue` (registered `<number>`, default 265) is the one root property. **P4-2** publishes the active card's hue with `publishMoveHue(card.move)` from an effect (and may leave it on the last card when the feed hides). Saved may publish the open card's hue.
+- `src/lib/move-hue.ts`: a 10-hue OKLCH ring, one slot per move (Gate 2 carry-over, P3-2). Each move in `src/content/moves.ts` is pinned to its own slot in `MOVE_HUES`; `moveHue(moveId)` returns the pin, or for an id that is not pinned (a new move from the content pipeline) a ring hue from a stable FNV-1a hash, so a new move still gets a hue with no UI change. It may share a hue until it is pinned here. Lightness and chroma are fixed by the tokens.
+
+| Hue | Name | Move |
+|---|---|---|
+| 20 | ember | Naming the obvious |
+| 50 | copper | Misdirection |
+| 80 | amber | Self-deprecation |
+| 140 | sage | Playing along |
+| 170 | jade | Escalation |
+| 205 | lagoon | Understatement |
+| 245 | cobalt | Mock seriousness |
+| 275 | iris | Literal interpretation (default hue) |
+| 305 | violet | Callback |
+| 340 | rose | Reversal |
+
+- Spacing is uneven on purpose. 30 degrees reads as distinct in the orange, green and blue-violet ranges. The red-pink and teal-cyan ranges need 35 to 40 degrees, because Gate 2 called 15/345 and 190/215 near-twins. The ring skips the yellow-green band (about 85 to 135 degrees), which turns muddy at low lightness. `move-hue.test.ts` checks that every move is pinned, that no two moves share a hue, and these minimum gaps (30 degrees, 35 inside red-pink and teal-cyan).
+- `--move-hue` (registered `<number>`, default 275, equal to `DEFAULT_MOVE_HUE`) is the one root property. **P4-2** publishes the active card's hue with `publishMoveHue(card.move)` from an effect (and may leave it on the last card when the feed hides). Saved may publish the open card's hue.
 - Root-derived colours, registered as `<color>` so a hue change crossfades in oklab instead of sweeping the hue wheel: `--hue-glow` (`oklch(0.44 0.12 h / 0.42)`, the ambient glow), `--hue-glow-soft` (`oklch(0.36 0.07 h / 0.3)`, the counter-light), `--hue-shadow` (`oklch(0.2 0.06 h / 0.7)`, the card shadow). They transition over `--dur-hue`.
 - Local tints: `hue-tag`, `hue-bubble` and `::selection` compute from `var(--move-hue)` where they are used. Root-declared tokens (`--focus-ring`, `--glass-shade`, `--hue-glow`, `--hue-glow-soft`, `--hue-shadow`) follow the root (active card) hue. To retint them locally as well, add `hue-scope` next to `moveHueStyle`. Where several moves share a screen (Saved rows, detail), set the hue on the element with `style={moveHueStyle(card.move)}`.
 - The hue feeds the ambient glow, the card shadow, the move tag, the response bubble, the focus ring and selection, and nothing else.
@@ -136,10 +153,11 @@ CSS (`globals.css`) and JS (`src/components/ui/motion.ts`) carry the same values
 |---|---|---|---|
 | `flipSpring` (JS) | spring, stiffness 120, damping 20, mass 1: settles in about 600 ms, no visible overshoot | replaced by `flipCrossfade` (150 ms opacity, linear) | Card flip (D-FLIP-1, P4-2) |
 | `specularSweep` (JS) | 600 ms, `easeGlide` | removed | Sweep during the flip |
-| `heartSpring`, `heartScale` (JS) | 1 to 1.18 to 1, quick spring | state change only | Heart fill |
+| `heartPop`, `heartScale` (JS) | 1 to 1.18 to 1, 300 ms tween (`times` 0 / 0.4 / 1, `ease-soft`), on save only | state change only | Heart fill (`HeartToggle`). Replaces the P2 `heartSpring`: framer-motion springs take two keyframes only. |
+| `capsuleSpring` (JS) | spring, stiffness 420, damping 42: critically damped, about 300 ms | instant | Nav active capsule slide (`NavPill`) |
 | `--dur-fast` | 150 ms | 150 ms (colour only) | Button and field hover, press |
 | `--dur-base` | 240 ms | 0 | Dialog, generic fades |
-| `--dur-sheet` | 280 ms, `ease-soft` | 0 (opacity only, no rise) | Sheet rise and backdrop |
+| `--dur-sheet` | 280 ms, `ease-soft` | 0 (opacity only, no rise) | Sheet and Drawer rise and backdrop; a Drawer released after a swipe finishes in `--drawer-swipe-strength` x `--dur-sheet` |
 | `--dur-crossfade` | 150 ms | 150 ms | Flip crossfade (CSS twin) |
 | `--dur-ready` / `animate-ready-fade` | 320 ms opacity | 0 | Clip fades in when ready (P4-3) |
 | `--dur-hue` | 1400 ms, `ease-glide` | 400 ms | Ambient and shadow hue crossfade |
@@ -164,16 +182,23 @@ Pressed buttons scale to 0.97; under reduced motion they do not scale. Reduced m
 | `Badge` | `move` (26 px `hue-tag` pill), `glass` | Card back move tag; Saved group label if a pill is wanted |
 | `Input` | `variant="field"` (default, `glass-control` pill, 48 px, no blur), `variant="chrome"` (blurred). The blur makes the field a stacking context, so a leading icon drawn before it needs `z-10`. | Saved search |
 | `Skeleton` | Faint glass fill with a slow shimmer, stopped under reduced motion | Feed skeleton card, Saved skeleton rows, clip loading |
-| `Sheet` | Popup is `glass-chrome-strong` with `rounded-t-sheet` (bottom), `--surface-scrim` backdrop, 280 ms soft rise (opacity only under reduced motion). Built-in close is a glass circle. New `SheetGrabber` (36 x 5 px pill). `data-slot`s and the transform transition the drag relies on are unchanged. | Phone detail sheet |
+| `Drawer` (P3-2, from 21st.dev 24837; D-SAVED-8) | Bottom-only Base UI Drawer: `Drawer`, `DrawerTrigger`, `DrawerPopup` (portal, `--surface-scrim` backdrop with no blur, viewport and the `glass-chrome-strong` `rounded-t-sheet` panel in one; max 92dvh; takes `finalFocus` / `initialFocus`), `DrawerContent` (the scrolling body; swipe-to-dismiss waits until it is at the top), `DrawerHandle` (32 px strip with the 36 x 5 pill; takes `data-testid`), `DrawerTitle`, `DrawerDescription`, `DrawerClose`. Native swipe-to-dismiss: the panel follows the finger, the scrim fades with `--drawer-swipe-progress`. Rise and fade use `--dur-sheet` / `ease-soft`, instant under reduced motion. `data-base-ui-swipe-ignore` on a child opts it out of the swipe. `drawerSurfaceClassName` draws the panel inline (showcase). | Phone detail sheet (P4-5 switches `detail-sheet.tsx` to it) |
+| `NavPill`, `NavPillItem` (P3-2, from 21st.dev 8343) | `glass-chrome` 52 px pill; items are 44 px, `text-label`, `--fg-secondary`, `--fg-primary` when `active`. The active item has a `--control-active` capsule that slides to the new item (`capsuleSpring`, shared layout, scoped per pill), instant under reduced motion. Focus ring, 0.97 press. Items render any element through `render` (Base UI `useRender`), e.g. `render={<Link href="/saved" />}`. The caller owns the `nav` label, `aria-current` and placement. | `AppNav` (P4-1) |
+| `HeartToggle` (P3-2, from 21st.dev 10627) | Base UI `Toggle` drawn as `Button variant="glass" size="circle"` (44 px): `aria-pressed`, fixed label (default "Save"), heart filled with `--fg-primary` when pressed. Pops to 1.18 once on save (`heartPop`), never on unsave, never on mount, not under reduced motion. Controlled (`pressed`, `onPressedChange`) or not; passes `data-testid` and other props to the button. | Card back heart (P4-2), detail heart (P4-5) |
+| `Sheet` | Popup is `glass-chrome-strong` with `rounded-t-sheet` (bottom), `--surface-scrim` backdrop, 280 ms soft rise (opacity only under reduced motion). Built-in close is a glass circle. New `SheetGrabber` (36 x 5 px pill). `data-slot`s and the transform transition the drag relies on are unchanged. | Phone detail sheet until P4-5 moves it to `Drawer`; kept because `detail-sheet.tsx` still uses it |
 | `Dialog` | `glass-chrome-strong`, `rounded-card`, scrim backdrop, subtle 0.98 zoom (none under reduced motion) | Not used by screens yet |
 | `AmbientLayer` | (new) | Root layout |
-| `motion.ts` | (new) | Card flip, heart, sweep, keyboard scroll |
+| `motion.ts` | (new; P3-2 added `heartPop`, `capsuleSpring`) | Card flip, heart, nav capsule, sweep, keyboard scroll |
 
 Untouched: `scroll-area`, `separator`, `tabs`, `tooltip`, `sonner` (they pick up the dark tokens through the shadcn names).
 
 ## 11. Hand-offs to P4
 
 - The screens still carry P1 grey-box classes (`border-neutral-*`, `bg-neutral-*`, `bg-background` on the sticky search, `rounded-none` on the search field). They override these tokens until each lane restyles.
-- P4-2: `glass-paint glass-rim` on both faces, `rounded-card` / `rounded-stage`, `text-cue` / `text-cue-stage`, `publishMoveHue`, `flipSpring`, `--specular-sweep`, `animate-hint-pulse motion-reduce:animate-none`.
-- P4-1: nav pill `glass-chrome rounded-pill`, active capsule `bg-[var(--control-active)]`.
-- P4-5: `Input variant="chrome"` with the icon at `z-10`, `rounded-group` lists, `moveHueStyle` for any hue in rows.
+- P4-2: `HeartToggle` for the heart (pass `data-testid="heart"`, `pressed`, `onPressedChange`; the label stays "Save"), `glass-paint glass-rim` on both faces, `rounded-card` / `rounded-stage`, `text-cue` / `text-cue-stage`, `publishMoveHue`, `flipSpring`, `--specular-sweep`, `animate-hint-pulse motion-reduce:animate-none`.
+- P4-1: `NavPill aria-label="Primary"` with one `NavPillItem render={<Link href=… />} active aria-current` per route; keep the fixed placement classes on the pill.
+- P4-5: switch `detail-sheet.tsx` to `Drawer` (D-SAVED-8): `DrawerPopup` with `finalFocus`, `DrawerHandle data-testid="sheet-grabber"`, the detail inside `DrawerContent`, `data-base-ui-swipe-ignore` on the clip frame; drop the framer-motion grabber drag. `HeartToggle` in the detail. `Input variant="chrome"` with the icon at `z-10`, `rounded-group` lists, `moveHueStyle` for any hue in rows.
+
+## 12. 21st.dev library (P3-2)
+
+Four components were fetched in P3-1 (`COMPONENTS_21ST.md`). Three were ported to the tokens, Base UI and framer-motion, and are shown in every state on `/showcase` (Library section): `Drawer`, `NavPill`, `HeartToggle`. Glass Card 28259 was dropped: what survives the no-`backdrop-filter`, static-specular rules is a full-perimeter 55% inner ring (louder than the top-left `glass-rim`) and a bottom shade that does not show at a calm strength, so `glass-paint glass-rim` stays. The raw fetched files were removed from `src/components/ui/x21/`; they are in git history (commit `000ed90`).

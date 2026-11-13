@@ -4,7 +4,10 @@
  * Gate screenshots: `npm run shots -- <phase>` writes 8 states x 3 viewports
  * (24 PNGs) plus the showcase (2 PNGs), the saved-bottom phone shot
  * (1 PNG) and the showcase card-mock frames (front and back in two move
- * hues, viewport height, phone and desktop: 8 PNGs) to docs/gates/<phase>/. Builds once and serves with `next start`.
+ * hues, viewport height, phone and desktop: 8 PNGs) to docs/gates/<phase>/.
+ * From P3 the showcase also has a live Drawer; when its trigger is present
+ * the open drawer is shot too (showcase-drawer-*, 2 PNGs, 37 in all).
+ * Builds once and serves with `next start`.
  * The YouTube IFrame API is the stub (D-TEST-2), so a healthy clip is a
  * labelled frame; the fallback shot uses the seeded broken card.
  * Set E2E_SKIP_BUILD=1 to reuse an existing build.
@@ -95,6 +98,7 @@ async function main() {
   const browser = await chromium.launch();
   const written = [];
   let navGap = null;
+  let drawerShots = 0;
   const shot = async (page, name, vp) => {
     const file = path.join(outDir, `${name}-${vp.name}.png`);
     await page.screenshot({ path: file });
@@ -206,14 +210,27 @@ async function main() {
         written.push(mockFile);
         console.log("wrote", path.relative(ROOT, mockFile));
       }
+      // Library drawer (P3-2), open, one viewport.
+      const trigger = page.locator('[data-testid="drawer-demo-trigger"]');
+      if (await trigger.count()) {
+        drawerShots++;
+        await trigger.scrollIntoViewIfNeeded();
+        await trigger.click();
+        await page.waitForSelector('[data-testid="drawer-demo-popup"]');
+        await page.waitForTimeout(400);
+        await shot(page, "showcase-drawer", vp);
+        await page.keyboard.press("Escape");
+        await page.waitForSelector('[data-testid="drawer-demo-popup"]', { state: "detached" });
+      }
       await ctx.close();
     }
   } finally {
     await browser.close();
     await server.stop();
   }
-  if (written.length !== 35) {
-    console.error(`expected 35 PNGs, wrote ${written.length}`);
+  const expected = 35 + drawerShots;
+  if (written.length !== expected) {
+    console.error(`expected ${expected} PNGs, wrote ${written.length}`);
     process.exit(1);
   }
   console.log(`wrote ${written.length} PNGs to docs/gates/${phase}/ (saved-bottom nav gap ${navGap}px)`);

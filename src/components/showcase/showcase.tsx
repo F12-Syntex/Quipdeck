@@ -6,7 +6,8 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { SheetGrabber } from "@/components/ui/sheet";
 import { cards, getMove } from "@/content";
-import { MOVE_HUE_RING, moveHue, moveHueStyle } from "@/lib/move-hue";
+import { MOVE_HUE_RING, MOVE_HUES, moveHue, moveHueStyle } from "@/lib/move-hue";
+import { LibraryDemos } from "./library-demos";
 import { MotionDemos } from "./motion-demos";
 import { OverlayDemos } from "./overlay-demos";
 
@@ -55,6 +56,12 @@ function Caption({ children }: { children: ReactNode }) {
 }
 
 /* ---------------- tokens ---------------- */
+
+/** The move pinned to a ring hue (each hue has exactly one). */
+function moveLabelForHue(hue: number): string {
+  const id = Object.keys(MOVE_HUES).find((k) => MOVE_HUES[k] === hue);
+  return id ? (getMove(id)?.label ?? id) : "Unpinned";
+}
 
 const SURFACES: { token: string; className: string; style?: CSSProperties }[] = [
   { token: "--surface-base", className: "bg-surface-base" },
@@ -154,7 +161,7 @@ function Tokens() {
           ))}
         </div>
         <p className="mt-6 text-label text-fg-secondary">
-          Move hue ring: hue-tag and hue-bubble per slot ({MOVE_HUE_RING.length} hues)
+          Move hue ring: hue-tag and hue-bubble per slot ({MOVE_HUE_RING.length} hues, one per move)
         </p>
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4 lg:grid-cols-6">
           {MOVE_HUE_RING.map((h) => (
@@ -165,7 +172,7 @@ function Tokens() {
             >
               <span className="hue-tag w-fit rounded-pill px-3 py-1 text-label">{h} deg</span>
               <span className="hue-bubble rounded-bubble px-3 py-2 text-caption text-fg-primary">
-                Response
+                {moveLabelForHue(h)}
               </span>
             </div>
           ))}
@@ -560,6 +567,13 @@ export function Showcase() {
       </header>
       <Tokens />
       <Primitives />
+      <Section
+        id="library"
+        title="Library (21st.dev ports)"
+        note="Fetched in P3-1, ported in P3-2 onto the tokens, Base UI and framer-motion. Each is drawn statically in every state, then live. Anything that was not calmer than the P2 version was dropped; the reasons are in COMPONENTS_21ST.md."
+      >
+        <LibraryDemos />
+      </Section>
       <Section
         id="card"
         title="Card, front and back"

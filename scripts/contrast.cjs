@@ -113,11 +113,15 @@ function surfaces(hue) {
     return over(color(token("glass-specular")), s);
   })();
   const control = color(token("control-fill"));
+  const chrome = over(color(token("chrome-fill")), glowPeak);
   return {
     // surface: [rgb, tertiary allowed?]
     "page (surface-base-top)": [baseTop, true],
     "surface-raised": [color(token("surface-raised")).rgb, true],
-    "glass-chrome over glow peak": [over(color(token("chrome-fill")), glowPeak), true],
+    "glass-chrome over glow peak": [chrome, true],
+    // P3-2: nav pill active capsule, and the drawer / sheet panel.
+    "nav capsule (control-active on glass-chrome)": [over(color(token("control-active")), chrome), false],
+    "glass-chrome-strong over glow peak (drawer, sheet)": [over(color(token("chrome-fill-strong")), glowPeak), true],
     "glass-paint over glow peak (card face)": [paint, true],
     "glass-control on card face": [over(control, paint), false],
     "glass-control on page (Input)": [over(control, glowPeak), true],

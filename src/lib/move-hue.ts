@@ -1,33 +1,51 @@
 import type { CSSProperties } from "react";
 
 /**
- * Move hue (D-THEME-3). Each move id maps to one slot on a curated OKLCH hue
- * ring. Lightness and chroma are fixed by the tokens in `globals.css`; this
- * module only picks the hue angle, so a new move from the content pipeline
- * gets a hue with no UI change.
+ * Move hue (D-THEME-3). Each move id maps to one hue angle on a curated
+ * OKLCH ring. Lightness and chroma are fixed by the tokens in `globals.css`;
+ * this module only picks the hue angle.
  *
- * The ring skips the muddy yellow-green band (roughly 75 to 135 degrees),
- * which reads as dirty at the low lightness the ambient layer uses.
- * Collisions are expected and accepted: the hue is ambience, never identity
- * (the move label carries identity).
+ * Ten slots for the ten moves in `src/content/moves.ts`, each pinned to its
+ * own slot (Gate 2 carry-over), so no two moves share a hue. Spacing is
+ * uneven on purpose: 30 degrees reads as distinct in the orange, green and
+ * blue-violet ranges, but the red-pink and teal-cyan ranges need 35 to 40
+ * (Gate 2 called 15/345 and 190/215 near-twins). The ring skips the
+ * yellow-green band (roughly 85 to 135 degrees), which turns muddy at the
+ * low lightness the ambient layer uses.
+ *
+ * A move that is not pinned (a new move from the content pipeline) still
+ * gets a ring hue from a stable hash, with no UI change; it may share a hue
+ * until the design system owner pins it.
  */
 export const MOVE_HUE_RING: readonly number[] = Object.freeze([
-  15, // ember
-  40, // copper
-  65, // amber
+  20, // ember
+  50, // copper
+  80, // amber
   140, // sage
-  165, // jade
-  190, // lagoon
-  215, // sky
-  240, // cobalt
-  265, // iris
-  290, // violet
-  315, // orchid
-  345, // rose
+  170, // jade
+  205, // lagoon
+  245, // cobalt
+  275, // iris
+  305, // violet
+  340, // rose
 ]);
 
-/** The hue shown before any card is active (iris). */
-export const DEFAULT_MOVE_HUE = 265;
+/** One slot per move in `moves.ts`. Every value is on `MOVE_HUE_RING`, used once. */
+export const MOVE_HUES: Readonly<Record<string, number>> = Object.freeze({
+  "naming-the-obvious": 20,
+  misdirection: 50,
+  "self-deprecation": 80,
+  "playing-along": 140,
+  escalation: 170,
+  understatement: 205,
+  "mock-seriousness": 245,
+  "literal-interpretation": 275,
+  callback: 305,
+  reversal: 340,
+});
+
+/** The hue shown before any card is active (iris). Matches `@property --move-hue`. */
+export const DEFAULT_MOVE_HUE = 275;
 
 /** The one root custom property screens publish (registered in globals.css). */
 export const MOVE_HUE_VAR = "--move-hue";
@@ -44,6 +62,8 @@ function fnv1a(input: string): number {
 
 /** Hue angle (degrees, one of `MOVE_HUE_RING`) for any move id, known or not. */
 export function moveHue(moveId: string): number {
+  // Own keys only: "constructor" or "__proto__" must not reach the prototype.
+  if (Object.hasOwn(MOVE_HUES, moveId)) return MOVE_HUES[moveId];
   return MOVE_HUE_RING[fnv1a(moveId) % MOVE_HUE_RING.length];
 }
 
