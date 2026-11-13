@@ -42,12 +42,13 @@ Translucent surfaces are composited in sRGB over their worst case: the ambient g
 | `glass-chrome` over glow peak | `#16282a` | 14.04 | 9.68 | 7.65 |
 | `glass-paint` top over glow peak (card face) | `#1f4747` | 9.35 | 6.45 | 5.09 |
 | `glass-control` on a card face | `#315656` | 7.42 | 5.12 | not allowed (4.04) |
+| `glass-control` on the page (`Input` field: text and placeholder) | `#1e4646` | 9.50 | 6.55 | 5.17 |
 | `glass-bubble` on a card face | `#2f5454` | 7.64 | 5.27 | not allowed (4.16) |
 | `hue-bubble` on a card face | `#185857` | 7.49 | 5.17 | not allowed (4.08) |
 
 Other pairs: `hue-tag` text on its own fill, worst hue: 6.46. `--fg-inverse` on `--fg-primary`: 16.6. Focus ring on the lightest card face: 7.74; on the base: 14.35.
 
-Rule: inside a control, a bubble or a tag, use `--fg-primary` or `--fg-secondary`, never `--fg-tertiary`.
+Rule: inside a control, a bubble or a tag that sits on a card face, use `--fg-primary` or `--fg-secondary`, never `--fg-tertiary`. A control on the page (the search field) may use `--fg-tertiary` (placeholder).
 
 ## 3. Glass recipes
 
@@ -72,7 +73,7 @@ Supporting tokens: `--glass-fill-top`, `--glass-fill-bottom`, `--glass-shade`, `
 - `src/lib/move-hue.ts`: `moveHue(moveId)` hashes the id (FNV-1a) to one slot of a 12-hue OKLCH ring: 15, 40, 65, 140, 165, 190, 215, 240, 265, 290, 315, 345. The ring skips the yellow-green band (about 75 to 135), which turns muddy at low lightness. Lightness and chroma are fixed by the tokens, so a new move gets a hue with no UI change. Unknown ids also get a ring hue. Collisions are accepted; the label carries identity. The current ten moves land on eight hues.
 - `--move-hue` (registered `<number>`, default 265) is the one root property. **P4-2** publishes the active card's hue with `publishMoveHue(card.move)` from an effect (and may leave it on the last card when the feed hides). Saved may publish the open card's hue.
 - Root-derived colours, registered as `<color>` so a hue change crossfades in oklab instead of sweeping the hue wheel: `--hue-glow` (`oklch(0.44 0.12 h / 0.42)`, the ambient glow), `--hue-glow-soft` (`oklch(0.36 0.07 h / 0.3)`, the counter-light), `--hue-shadow` (`oklch(0.2 0.06 h / 0.7)`, the card shadow). They transition over `--dur-hue`.
-- Local tints: `hue-tag`, `hue-bubble`, `--focus-ring` and `::selection` compute from `var(--move-hue)` where they are used. Where several moves share a screen (Saved rows, detail), set the hue on the element with `style={moveHueStyle(card.move)}`.
+- Local tints: `hue-tag`, `hue-bubble` and `::selection` compute from `var(--move-hue)` where they are used. `--focus-ring` is declared on `:root`, so it follows the root (active card) hue only; a local `moveHueStyle` does not retint it. Where several moves share a screen (Saved rows, detail), set the hue on the element with `style={moveHueStyle(card.move)}`.
 - The hue feeds the ambient glow, the card shadow, the move tag, the response bubble, the focus ring and selection, and nothing else.
 
 ## 5. Ambient layer (D-THEME-2)
