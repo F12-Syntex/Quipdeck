@@ -1,6 +1,6 @@
 # Quipdeck validation (P5-3)
 
-All results come from one run on the tree at commit `a2eb838` (branch `claude/epic-volta-ez6fjc`). That run came after the last source change, in a Linux sandbox using headless Chromium from Playwright. Clip behaviour is tested against the stubbed YouTube IFrame API (D-TEST-2). Real playback is a device check and appears in the MAN list below.
+All results come from one run on the tree at commit `471f66a` (branch `claude/epic-volta-ez6fjc`). That run came after the last source change, in a Linux sandbox using headless Chromium from Playwright. Clip behaviour is tested against the stubbed YouTube IFrame API (D-TEST-2). Real playback is a device check and appears in the MAN list below.
 
 ## 1. Commands
 
@@ -20,9 +20,9 @@ The QG chain (`lint && typegen && tsc && test && build`) passes.
 
 ## 2. Fixes in this pass
 
-- **A-9, "Back to cue" (`flip-back`).** The hit box is now 115 x 44; it was 107 x 36. A 5 px transparent border replaces the 1 px one. The fill and the inset glass shadows stop at the padding box, the box moves up and left by 4 px, and the focus ring is pulled in by 4 px. The painted pill and its ring land on the same pixels as before (checked against a 2x baseline). The button is absolutely placed, so layout does not change. CB-8 passes at 375x667 and 360x640 for all 14 cards, and FL-9 and KB-8 still pass. The change is in `src/components/card/card-back.tsx`.
+- **A-9, "Back to cue" (`flip-back`).** The hit box is now 115 x 44; it was 107 x 36. A 5 px transparent border replaces the 1 px one. The fill and the inset glass shadows stop at the padding box, the box moves up and left by 4 px, and the focus ring is pulled in by 4 px. The painted pill and its ring have the same extents and fill as before (checked against a 2x baseline). The button is absolutely placed, so layout does not change. CB-8 passes at 375x667 and 360x640 for all 14 cards, and FL-9 and KB-8 still pass. The change is in `src/components/card/card-back.tsx`.
 - **D-SAVED-9.** DESIGN_SYSTEM section 10 now lists Clear search as `quiet pill` (44 px), and it notes the 44 px hit box on "Back to cue".
-- **Final-gate note, saved-bottom 390.** I recorded a video of the saved list scrolling under the stuck search, plus 6 mid-scroll frames: `docs/gates/final/saved-scroll-390x844.webm` and `saved-scroll-1..6-390x844.png`. With the 16 px fade, the clipped text of the emerging card stayed legible right against the pill's lower edge, and the card's top edge met the pill. That read as attached. The fade is now stronger: 28 px instead of 16 px, eased to 60% at 14 px, with the same `--surface-base-top` colour. There is no divider and no token change (`src/components/saved/saved-search.tsx`). Trade-off: right after the search sticks, the first group tag is slightly dimmed.
+- **Final-gate note, saved-bottom 390.** I recorded a video of the saved list scrolling under the stuck search, plus 6 mid-scroll frames: `docs/gates/final/saved-scroll-390x844.webm` and `saved-scroll-1..6-390x844.png`. With the 16 px fade, the clipped text of the emerging card stayed legible right against the pill's lower edge, and the card's top edge met the pill. That read as attached. A 28 px fade was tried first, but the video showed the first group tag dimming in one frame as the bar stuck, because that tag sits only 14 to 17 px under the field. The fade therefore stays 16 px long but is eased and steeper: 85% at 6 px and 40% at 11 px, where it was linear before. It uses the same `--surface-base-top` colour. Text clipped right under the pill now drops out, and the first tag no longer pops. There is no divider and no token change (`src/components/saved/saved-search.tsx`).
 
 ## 3. Final pack
 
@@ -198,7 +198,7 @@ Setup. On a computer on the same Wi-Fi as the phones, run `npm run build && npx 
 2. Let the clip reach its end. It loops without user action.
 3. Tap the mute button (speaker icon, bottom right). Sound plays and the button now reads "Mute".
 4. Tap the dialogue text on the back (not the clip or a button) to flip back, swipe up to the next card, and tap it. Once the next clip plays, it has sound and the button still reads "Mute": unmute persists for the visit. If iOS pauses the clip or forces it muted, the button must say "Unmute" and the clip must keep playing muted. Record which case you see.
-5. Tap Saved, open any saved card, and check that its clip is also unmuted.
+5. On the current card's back, tap the heart to save it. Tap Saved, open that card, and check that its clip is also unmuted.
 6. Reload the page. The new visit starts muted.
 
 **M-2. Android Chrome playback.** Repeat M-1 steps 1 to 6 on a current Android phone in Chrome.
@@ -210,8 +210,8 @@ Setup. On a computer on the same Wi-Fi as the phones, run `npm run build && npx 
 4. If the tap does not pause the clip on iOS, report it to the lead. The ruling then requires that, under reduced motion, the clip is cued without autoplay.
 
 **M-4. Trackpad momentum paging (D-FEED-12).** Use a MacBook in Safari and in Chrome at 1440 wide or larger.
-1. With the pointer over the card, but not over a playing clip, make one firm two-finger swipe. The feed moves exactly one card and snaps, and momentum does not skip a card.
-2. Make a slow swipe. It still snaps to one card.
+1. With the pointer over the card, but not over a playing clip, make one firm two-finger swipe. By design (D-FEED-11), wheel input is gathered to about 40 px, the feed moves one card, and further input is ignored until scrolling settles. So one swipe moves exactly one card and snaps, and the momentum tail does not skip a second card.
+2. Make a slow, short swipe. It still moves one card once it passes about 40 px, and never snaps back to the same card.
 3. With the pointer over a playing clip, swipe. The feed does not page (known limit, section 6). Keys, the previous and next buttons, and wheeling elsewhere still page.
 
 **M-5. Safe areas (LF-5).** Use an iPhone with a notch or Dynamic Island, in portrait, with Safari and also with the page added to the Home Screen.
@@ -219,10 +219,10 @@ Setup. On a computer on the same Wi-Fi as the phones, run `npm run build && npx 
 2. On `/saved`, scroll down. The stuck search sits below the status bar, and the band behind it covers the status-bar strip. The last row clears the nav.
 3. Open a saved card. The detail sheet's bottom content clears the home indicator.
 
-**M-6. Hues side by side (Gate 3 carry-over).** Use the iPhone and the Android phone at full brightness, then again at about 50%.
-1. In a fresh tab, save these four cards in this order, using the heart on each card's back: "Someone mentions a small inconvenience" (Escalation, hue 170), "Someone describes a disaster" (Understatement, 205), "A trivial matter comes up" (Mock seriousness, 245; its clip shows the fallback, which is expected), and "Someone uses a figure of speech" (Literal interpretation, 275).
-2. Open Saved. The Escalation and Understatement groups sit next to each other, and so do Mock seriousness and Literal interpretation. Within each pair, the tags must read as clearly different colours (jade against lagoon, cobalt against iris), not as the same colour twice.
-3. Optional: flip each card in the feed. The glow behind the card must also tell the hues apart.
+**M-6. Hues side by side (Gate 3 carry-over).** Use the iPhone and the Android phone at full brightness, then again at about 50%. Saved groups are sorted by move label, so check each pair in its own fresh private tab with only those two cards saved. Then the two groups sit next to each other.
+1. Pass A, hues 170 and 205. Save "Someone mentions a small inconvenience" (Escalation, jade 170) and "Someone describes a disaster" (Understatement, lagoon 205), using the heart on each card's back. Open Saved. The Escalation and Understatement tags must read as two clearly different colours, not the same colour twice.
+2. Pass B, hues 245 and 275, in a new private tab. Save "A trivial matter comes up" (Mock seriousness, cobalt 245; its clip shows the fallback, which is expected) and "Someone uses a figure of speech" (Literal interpretation, iris 275). Open Saved and compare the two tags the same way.
+3. Optional: flip each of these cards in the feed. The glow behind the card must also tell the hues apart.
 
 **M-7. Error boundary (R-5).** This is not scripted. To check it in development, throw from a page component temporarily. The screen must show one line, "Something went wrong.", and a "Reload" button that recovers. Revert the throw afterwards.
 
