@@ -25,7 +25,10 @@ export type CardFrontProps = {
  * follows the pointer through CSS only, so server and client agree.
  * The cue and label sit at the optical centre (slightly above the middle).
  * The hint pulses only on the active card's showing front (one moving
- * thing at a time; no hidden animations on the other cards).
+ * thing at a time; no hidden animations on the other cards), and only for
+ * two cycles each time the card becomes active, then rests at full
+ * opacity (D-FEED-13). The animation is `none` while inactive, so it
+ * restarts on the next activation. No pulse under reduced motion.
  */
 export function CardFront({
   card,
@@ -64,7 +67,7 @@ export function CardFront({
         type="button"
         data-testid="reveal"
         onClick={onReveal}
-        className="min-h-11 animate-hint-pulse self-center rounded-pill px-4 text-caption text-fg-tertiary motion-reduce:animate-none in-data-[active=false]:animate-none in-data-[face=back]:animate-none lg:-ml-1 lg:self-start lg:px-1"
+        className="min-h-11 animate-hint-pulse [animation-iteration-count:2] self-center rounded-pill px-4 text-caption text-fg-tertiary motion-reduce:animate-none in-data-[active=false]:animate-none in-data-[face=back]:animate-none lg:-ml-1 lg:self-start lg:px-1"
       >
         <span className="pointer-fine:hidden">Tap to reveal</span>
         <span className="hidden pointer-fine:inline">Click to reveal</span>

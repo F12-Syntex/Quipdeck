@@ -1,4 +1,4 @@
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 /**
  * Placeholder block. A faint glass fill with a slow shimmer that stops under

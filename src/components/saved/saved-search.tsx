@@ -1,6 +1,6 @@
 "use client";
 
-import type { Ref } from "react";
+import { useEffect, useRef, type Ref } from "react";
 import { SearchIcon, XIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,45 +19,89 @@ export type SavedSearchProps = {
  * context, hence `z-10` on the icon drawn before it.
  * A clear button appears with a query; Escape in the field clears it and
  * consumes the key (so it does not also close the desktop pane).
+ *
+ * While stuck, a backing (`--surface-base-top`, the colour of the ambient
+ * base at the top of the screen) covers the strip from the screen's top
+ * edge, safe area included, to the middle of the field, fading out behind
+ * the field so rows never peek above it but still read through its lower
+ * half. It shows only while stuck (a zero-height sentinel just before the
+ * bar leaves the top), so nothing is painted over the title at rest and
+ * the layout never changes.
  */
 export function SavedSearch({ ref, query, onQueryChange }: SavedSearchProps) {
+  const barRef = useRef<HTMLDivElement>(null);
+  const sentinelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const bar = barRef.current;
+    const sentinel = sentinelRef.current;
+    if (!bar || !sentinel || typeof IntersectionObserver === "undefined") return;
+    let observer: IntersectionObserver | null = null;
+    const observe = () => {
+      observer?.disconnect();
+      // The bar sticks at its computed `top` (the safe-area inset, or 0).
+      const top = Math.round(parseFloat(getComputedStyle(bar).top) || 0);
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          const stuck = !entry.isIntersecting && entry.boundingClientRect.top < top + 1;
+          if (stuck) bar.dataset.stuck = "";
+          else delete bar.dataset.stuck;
+        },
+        { rootMargin: `${-top}px 0px 0px 0px` },
+      );
+      observer.observe(sentinel);
+    };
+    observe();
+    window.addEventListener("resize", observe);
+    return () => {
+      observer?.disconnect();
+      window.removeEventListener("resize", observe);
+    };
+  }, []);
+
   return (
-    <div className="sticky top-[env(safe-area-inset-top)] z-10 py-2 lg:top-0">
-      <div className="relative">
-        <SearchIcon
-          aria-hidden="true"
-          className="pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-fg-tertiary"
-        />
-        <Input
-          ref={ref}
-          variant="chrome"
-          type="search"
-          aria-label="Search saved"
-          placeholder="Search saved"
-          autoComplete="off"
-          value={query}
-          onChange={(event) => onQueryChange(event.target.value)}
-          onKeyDown={(event) => {
-            if (event.key === "Escape" && query !== "") {
-              event.preventDefault();
-              onQueryChange("");
-            }
-          }}
-          className="pr-12 pl-11 [&::-webkit-search-cancel-button]:appearance-none"
-        />
-        {query !== "" ? (
-          <Button
-            variant="quiet"
-            size="circle"
-            data-testid="search-clear"
-            aria-label="Clear"
-            onClick={() => onQueryChange("")}
-            className="absolute top-1/2 right-0.5 z-10 -translate-y-1/2"
-          >
-            <XIcon aria-hidden="true" />
-          </Button>
-        ) : null}
+    <>
+      <div ref={sentinelRef} aria-hidden="true" className="h-0" />
+      <div
+        ref={barRef}
+        className="sticky top-[env(safe-area-inset-top)] z-10 py-2 lg:top-0 before:pointer-events-none before:absolute before:-inset-x-4 before:top-[calc(-1*env(safe-area-inset-top))] before:bottom-1/2 before:bg-[linear-gradient(to_bottom,var(--surface-base-top)_calc(100%-24px),transparent)] before:opacity-0 data-stuck:before:opacity-100 lg:before:top-0"
+      >
+        <div className="relative">
+          <SearchIcon
+            aria-hidden="true"
+            className="pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-fg-tertiary"
+          />
+          <Input
+            ref={ref}
+            variant="chrome"
+            type="search"
+            aria-label="Search saved"
+            placeholder="Search saved"
+            autoComplete="off"
+            value={query}
+            onChange={(event) => onQueryChange(event.target.value)}
+            onKeyDown={(event) => {
+              if (event.key === "Escape" && query !== "") {
+                event.preventDefault();
+                onQueryChange("");
+              }
+            }}
+            className="pr-12 pl-11 [&::-webkit-search-cancel-button]:appearance-none"
+          />
+          {query !== "" ? (
+            <Button
+              variant="quiet"
+              size="circle"
+              data-testid="search-clear"
+              aria-label="Clear"
+              onClick={() => onQueryChange("")}
+              className="absolute top-1/2 right-0.5 z-10 -translate-y-1/2"
+            >
+              <XIcon aria-hidden="true" />
+            </Button>
+          ) : null}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

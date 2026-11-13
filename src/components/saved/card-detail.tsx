@@ -77,11 +77,7 @@ export function CardDetail({ cardId, mode, clipActive = true }: CardDetailProps)
           >
             <XIcon aria-hidden="true" />
           </DrawerClose>
-          {/* `text-heading` is repeated on purpose: the class merge treats
-              the custom size and `text-fg-primary` as one group and keeps
-              only the last, so DrawerTitle's own size is dropped. The
-              colour is inherited from the drawer surface. */}
-          <DrawerTitle className="min-w-0 flex-1 pt-2.5 text-heading">
+          <DrawerTitle className="min-w-0 flex-1 pt-2.5">
             {card.cue}
           </DrawerTitle>
         </div>

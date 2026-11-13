@@ -4,7 +4,7 @@ import * as React from "react"
 import { Toggle } from "@base-ui/react/toggle"
 import { motion, useReducedMotion } from "framer-motion"
 import { HeartIcon } from "lucide-react"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 import { buttonVariants } from "@/components/ui/button"
 import { heartPop, heartScale } from "@/components/ui/motion"

@@ -2,7 +2,7 @@
 
 import * as React from "react"
 import { Drawer as DrawerPrimitive } from "@base-ui/react/drawer"
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 /*
  * Bottom drawer (D-SAVED-8). Ported from 21st.dev "Drawer (Base UI)" 24837
