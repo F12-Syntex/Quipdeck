@@ -5,10 +5,10 @@ import type { WitCard } from "./types";
 
 // Reachable, embeddable public videos (verified via YouTube oEmbed).
 const A = "M7lc1UVf-VE"; // YouTube IFrame API demo video
-const B = "jNQXAC9IVRw";
-const C = "dQw4w9WgXcQ";
-const D = "YE7VzlLtp-4";
-const E = "aqz-KE-bpKQ";
+const B = "eRsGyueVLvQ"; // Sintel (Blender Foundation open movie)
+const C = "R6MlUcmOul8"; // Tears of Steel (Blender Foundation open movie)
+const D = "YE7VzlLtp-4"; // Big Buck Bunny (Blender Foundation open movie)
+const E = "aqz-KE-bpKQ"; // Big Buck Bunny 60fps (Blender Foundation open movie)
 
 export const cards: WitCard[] = [
   {
