@@ -185,6 +185,12 @@ async function main() {
         console.log(`saved-bottom: last row bottom ${m.lastBottom}px, nav top ${m.navTop}px, gap ${navGap}px, at end ${m.atEnd}`);
         if (!m.atEnd) throw new Error("saved-bottom: page not scrolled to the end");
         if (navGap < 0) throw new Error(`saved-bottom: last row overlaps the nav by ${-navGap}px`);
+        // Stuck search (P4-8): the backing above the field is drawn, so rows never peek above it.
+        const backing = await page.evaluate(() => {
+          const bar = document.querySelector('[data-testid="saved-list"] input[type="search"]').closest(".sticky");
+          return { stuck: bar.hasAttribute("data-stuck"), opacity: getComputedStyle(bar, "::before").opacity };
+        });
+        if (!backing.stuck || backing.opacity !== "1") throw new Error("saved-bottom: stuck search backing not drawn " + JSON.stringify(backing));
         await shot(page, "saved-bottom", vp);
         await page.evaluate(() => window.scrollTo(0, 0));
       }
