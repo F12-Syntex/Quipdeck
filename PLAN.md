@@ -173,6 +173,10 @@ Parallelism: P4-1 to P4-5 run together (five disjoint lanes). P4-6 runs alone af
 
 ---
 
+## Phase 6: deploy (user request)
+
+After the final gate passes: link `F12-Syntex/Quipdeck` as Vercel project `quipdeck` in team `f12-syntexs-projects`, deploy the final commit of `claude/epic-volta-ez6fjc` to production, add the domain `quipdeck.saifdev.app` (the apex `saifdev.app` is already verified in the team on Vercel DNS), then confirm that `/`, `/saved` and a 404 load over HTTPS on that domain. Report the deployment protection setting to the user.
+
 ## Dependency graph
 
 ```
