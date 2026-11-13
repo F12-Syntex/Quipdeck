@@ -9,9 +9,9 @@ All results come from one run on the tree at commit `471f66a` (branch `claude/ep
 | `npm run lint` | pass: 0 errors, 3 warnings (two unused variables and one unused disable directive, all in `e2e/a11y.test.cjs`) |
 | `npx next typegen` | pass ("Types generated successfully") |
 | `npx tsc --noEmit` | pass (no output) |
-| `npm test` (vitest) | pass: 105 tests in 8 files |
+| `npm test` (vitest) | pass: 119 tests in 8 files |
 | `npm run build` | pass. Route table: `○ /`, `○ /_not-found`, `○ /saved`, `○ /showcase`, all static (prerendered), with Partial Prefetching enabled |
-| `npm run e2e` | pass: 176/176, 0 fail, 0 skipped (the 13 files in `e2e/`, `a11y.test.cjs` included: 147 inventory tests plus 29 accessibility tests) |
+| `npm run e2e` | pass: 177/177, 0 fail, 0 skipped (the 13 files in `e2e/`, `a11y.test.cjs` included: 148 inventory tests plus 29 accessibility tests; re-run after P5-4/P5-5) |
 | `node --test e2e/a11y.test.cjs` | pass: 29/29. axe finds 0 serious or critical violations and prints no moderate findings. A-9 is now green |
 | `node scripts/contrast.cjs` | exit 0, "contrast ok". Lowest enforced ratio: **4.66:1** (`fg-secondary` on `glass-control` on a card face, floor 4.5). `fg-tertiary` on the bubbles (3.93, 3.97) is barred by design: no such pairing is used |
 | `npm run shots -- final` | pass: 49 PNGs in `docs/gates/final/`, with a saved-bottom nav gap of 23.8 px |
@@ -19,6 +19,9 @@ All results come from one run on the tree at commit `471f66a` (branch `claude/ep
 The QG chain (`lint && typegen && tsc && test && build`) passes.
 
 ## 2. Fixes in this pass
+
+Post-final-gate (independent high-risk review of the clip engine, FAIL then PASS): play-start timeout now extends while buffering (cap about 25 s); blocked autoplay shows the player paused and keyboard-reachable instead of falling back; eviction emits `idle`; the IFrame API preloads at idle; `Referrer-Policy: strict-origin-when-cross-origin` on all routes; recheck interval clamped. Seed clips swapped to openly licensed Blender open movies and the YouTube developer demo.
+
 
 - **A-9, "Back to cue" (`flip-back`).** The hit box is now 115 x 44; it was 107 x 36. A 5 px transparent border replaces the 1 px one. The fill and the inset glass shadows stop at the padding box, the box moves up and left by 4 px, and the focus ring is pulled in by 4 px. The painted pill and its ring have the same extents and fill as before (checked against a 2x baseline). The button is absolutely placed, so layout does not change. CB-8 passes at 375x667 and 360x640 for all 14 cards, and FL-9 and KB-8 still pass. The change is in `src/components/card/card-back.tsx`.
 - **D-SAVED-9.** DESIGN_SYSTEM section 10 now lists Clear search as `quiet pill` (44 px), and it notes the 44 px hit box on "Back to cue".
@@ -108,6 +111,7 @@ Results are "pass (N e2e tests)" when the e2e spec output has N passing tests na
 | CL-19 | Nothing over the player | pass (1 e2e test) |
 | CL-20 | Keyboard survives a click in the clip | pass (1 e2e test) |
 | CL-21 | Privacy | pass (1 e2e test) |
+| CL-23 | Blocked autoplay | pass (unit + e2e with stub `blockedIds`: paused, player visible and Tab-reachable, no fallback). MAN: iOS Low Power Mode, and whether Enter/Space starts YouTube's own play button with `disablekb` set. |
 | CL-22 | Real playback | MAN: real autoplay, loop, captions and unmute on devices (the sandbox returns error 150). |
 | SV-1 | Heart toggles save | pass (1 e2e test) |
 | SV-2 | Stored on device | pass (1 e2e test) |
@@ -184,9 +188,9 @@ Results are "pass (N e2e tests)" when the e2e spec output has N passing tests na
 | X-7 | Heart on list rows | pass (1 e2e test) |
 | Q-1 | Lint | pass (0 errors, 3 warnings in `e2e/a11y.test.cjs`). |
 | Q-2 | Types | pass. |
-| Q-3 | Unit tests | pass (105 tests, 8 files). |
+| Q-3 | Unit tests | pass (119 tests in 8 files). |
 | Q-4 | Build | pass (4 static routes). |
-| Q-5 | e2e | pass (176/176). |
+| Q-5 | e2e | pass (177/177). |
 | Q-6 | Screens | pass (`npm run shots -- final`: 49 PNGs). |
 
 ## 5. MAN list (run on real devices before release)
@@ -225,6 +229,10 @@ Setup. On a computer on the same Wi-Fi as the phones, run `npm run build && npx 
 3. Optional: flip each of these cards in the feed. The glow behind the card must also tell the hues apart.
 
 **M-7. Error boundary (R-5).** This is not scripted. To check it in development, throw from a page component temporarily. The screen must show one line, "Something went wrong.", and a "Reload" button that recovers. Revert the throw afterwards.
+
+**M-CL23. Blocked autoplay (CL-23).** On an iPhone in Low Power Mode, flip a card: the clip should show paused with YouTube's play button visible, not "Clip unavailable". Tap it to play. On a desktop browser with autoplay blocked, Tab into the player and press Enter or Space; note whether it starts.
+
+**M-BUF. Slow network.** In Chrome DevTools, throttle to "Slow 3G" and flip a card. The clip should keep loading for up to about 25 s before falling back, not after 8 s.
 
 ## 6. Known limits
 

@@ -177,6 +177,8 @@ Parallelism: P4-1 to P4-5 run together (five disjoint lanes). P4-6 runs alone af
 
 After the final gate passes: link `F12-Syntex/Quipdeck` as Vercel project `quipdeck` in team `f12-syntexs-projects`, deploy the final commit of `claude/epic-volta-ez6fjc` to production, add the domain `quipdeck.saifdev.app` (the apex `saifdev.app` is already verified in the team on Vercel DNS), then confirm that `/`, `/saved` and a 404 load over HTTPS on that domain. Report the deployment protection setting to the user.
 
+Status: blocked. The Vercel connector can read the team and domain (no `quipdeck` project exists; `quipdeck.saifdev.app` has no conflicts and currently answers DEPLOYMENT_NOT_FOUND), but `create_git_project` returns 403 forbidden and there is no Vercel CLI or token in the container. The user needs to grant access (see the final report).
+
 ## Dependency graph
 
 ```
@@ -224,7 +226,8 @@ GATE 4 -> { P5-1 | P5-2 } -> P5-3 -> FINAL GATE
 | P5-1 | merged. 147/147 on 3 runs, 0 flakes. KB-4 root cause: the helper only walked down. MAN: R-5, CL-4, CL-12 iOS, CL-22, A-7, LF-5. |
 | P5-3 | done. vitest 105, e2e 176 (147 + 29 a11y), axe 0, contrast 4.66. |
 | Final gate | APPROVED |
-| P5-4 | done. Fixes for the clip engine review FAIL: buffering grace up to about 25 s, blocked autoplay goes to paused with the player visible, eviction emits idle, idle preload of the API, Referrer-Policy header. Re-review pending. |
+| P5-4 | done. Fixes for the clip engine review FAIL: buffering grace up to about 25 s, blocked autoplay goes to paused with the player visible, eviction emits idle, idle preload of the API, Referrer-Policy header. Re-review PASS. |
+| P5-5 | done. Recheck clamp; blocked-autoplay player is Tab-reachable. vitest 119, e2e 177, a11y 29. |
 | Seed clips | Swapped to neutral, openly licensed videos (Blender open movies plus the YouTube developer demo), all checked via oEmbed. |
 | P5-2 | merged. axe: 0 violations on 14 states. One real failure kept for P5-3: A-9, `flip-back` button is 107x36 at 390 (needs at least 44 high). |
 | P4-6 inbox | (1) D-CLIP-13: restore `rounded-clip` in clip.tsx; make CL-19 radius-aware. (2) Gate 3: delete unused Sheet, SheetGrabber and Dialog primitives. (3) Add `data-base-ui-swipe-ignore` on the clip so swiping it inside the Drawer does not dismiss. (4) Recheck the detail title inset against CardBack at 390 and 1440. (6) Re-run LF-2 on the merged tree (P4-2 saw it fail on the pre-P4-1 grey-box nav). (7) P4-2 deviations to judge against the wireframes: phone back is one centred block (tag and action row not pinned; heart top 586/844); front move label untinted (no hue text token). (5) After P4-7, check that DrawerTitle/Description and the quiet pill button render their intended sizes and remove the P4-5 workarounds. |
