@@ -201,5 +201,4 @@ export {
   DrawerHandle,
   DrawerTitle,
   DrawerDescription,
-  drawerSurfaceClassName,
 }

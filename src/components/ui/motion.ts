@@ -1,6 +1,6 @@
 /**
- * Motion tokens for framer-motion. CSS twins live in globals.css
- * (`--dur-*`, `--ease-*`). Reduced-motion values are read with
+ * Motion tokens for framer-motion. CSS durations and easing for the
+ * sheet, fades and the clip live in globals.css (`--dur-*`, `ease-soft`). Reduced-motion values are read with
  * `useReducedMotion()` (D-FLIP-3), never by user agent.
  */
 
@@ -38,15 +38,6 @@ export const capsuleSpring = {
   stiffness: 420,
   damping: 42,
   mass: 1,
-} as const;
-
-/** Generic UI transitions (sheet rise, fades). CSS twins: --ease-soft, --dur-*. */
-export const easeSoft = [0.22, 1, 0.36, 1] as const;
-export const duration = {
-  fast: 0.15,
-  base: 0.24,
-  sheet: 0.28,
-  ready: 0.2,
 } as const;
 
 /** Scroll behaviour for keyboard paging (D-FLIP-3: instant under reduced motion). */

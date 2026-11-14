@@ -216,7 +216,7 @@
   --chart-4-foreground: oklch(0 0 0);
   --chart-5-foreground: oklch(0 0 0);
 
-  /* Motion durations (JS twins in src/components/ui/motion.ts). */
+  /* Motion durations (springs for the flip, nav and heart: src/components/ui/motion.ts). */
   --dur-fast: 150ms;
   --dur-base: 240ms;
   --dur-sheet: 280ms;
