@@ -14,7 +14,7 @@ export function toggleSaveAndAnnounce(cardId: string): boolean {
 }
 
 /**
- * Heart (D-SAVE-5): fixed name "Save", `aria-pressed`, 44 px glass circle.
+ * Heart (D-SAVE-5): fixed name "Save", `aria-pressed`, 48 px circle.
  * Controlled by the saves store, so a save by the S key pops it too.
  */
 export function HeartButton({ cardId }: HeartButtonProps) {

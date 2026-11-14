@@ -15,7 +15,7 @@ export type DetailSheetProps = {
 
 /**
  * Phone container for the detail (D-SAVED-7, D-SAVED-8): a modal bottom
- * sheet on the Base UI Drawer (focus trap, Escape, scroll lock, scrim,
+ * sheet on the Base UI Drawer (focus trap, Escape, scroll lock, backdrop,
  * native swipe-to-dismiss). Always mounted; `open` is derived from the URL
  * by the caller, so every close path runs the same `onClose`.
  *

@@ -9,15 +9,16 @@ import { useSavedIds } from "@/lib/saves-store";
 import { Skeleton } from "@/components/ui/skeleton";
 import { CardDetail } from "./card-detail";
 import { DetailSheet } from "./detail-sheet";
-import { SavedEmpty, SavedNoResults } from "./saved-states";
+import { DetailPlaceholder, SavedEmpty, SavedNoResults } from "./saved-states";
 import { SavedGroups } from "./saved-groups";
 import { SavedSearch } from "./saved-search";
 
-/** Page frame: one column on phone, the 1200 px container on desktop. */
+/** Page frame: one 640 px column on phone and tablet, the 1200 px container on desktop. */
 const FRAME =
-  "mx-auto w-full max-w-[560px] px-4 pt-[calc(env(safe-area-inset-top)+16px)] pb-[calc(env(safe-area-inset-bottom)+84px)] lg:max-w-[1200px] lg:px-6 lg:pt-[88px] lg:pb-6";
+  "mx-auto w-full max-w-[640px] px-4 pt-[calc(env(safe-area-inset-top)+24px)] pb-[calc(env(safe-area-inset-bottom)+92px)] lg:max-w-[1200px] lg:px-6 lg:pt-24 lg:pb-6";
 
-const TITLE = "py-2 text-title text-fg-primary outline-none";
+/** "Saved", 36 px bold (REDESIGN_V2 5.5). No count (SL-3, X-2). */
+const TITLE = "py-1 text-4xl font-bold tracking-[-0.02em] text-foreground";
 
 const cardById = new Map(cards.map((c) => [c.id, c]));
 
@@ -34,15 +35,15 @@ export function SavedFallback() {
         aria-hidden="true"
         className="mt-6 lg:max-w-[400px]"
       >
-        <Skeleton className="mb-2.5 h-[26px] w-36 rounded-pill" />
-        <div className="rounded-group glass-control">
+        <Skeleton className="mb-2.5 h-8 w-36 rounded-full" />
+        <div className="overflow-hidden rounded-3xl bg-card">
           {[0, 1, 2].map((i) => (
             <div
               key={i}
-              className="flex min-h-16 flex-col justify-center gap-2 border-b border-hairline px-4 py-3 last:border-b-0"
+              className="flex min-h-[72px] flex-col justify-center gap-2 border-b border-border px-4 py-3.5 last:border-b-0"
             >
-              <Skeleton className="h-3.5 w-4/5 rounded-pill" />
-              <Skeleton className="h-3.5 w-1/2 rounded-pill" />
+              <Skeleton className="h-4 w-4/5 rounded-full" />
+              <Skeleton className="h-4 w-1/2 rounded-full" />
             </div>
           ))}
         </div>
@@ -179,6 +180,7 @@ export function Saved() {
             />
             {noResults ? (
               <SavedNoResults
+                query={query}
                 onClear={() => {
                   setQuery("");
                   searchRef.current?.focus();
@@ -202,19 +204,12 @@ export function Saved() {
       {desktop ? (
         <div
           ref={paneRef}
-          className="sticky top-[88px] h-[calc(100dvh-112px)] overflow-y-auto overscroll-contain rounded-pane glass-chrome-strong"
+          className="sticky top-24 h-[calc(100dvh-120px)] overflow-y-auto overscroll-contain rounded-4xl border border-border bg-card"
         >
           {paneId ? (
             <CardDetail key={paneId} cardId={paneId} mode="pane" />
           ) : (
-            <div
-              data-testid="detail-placeholder"
-              className="flex h-full items-center justify-center p-6 text-center"
-            >
-              <p className="text-body text-fg-tertiary">
-                Choose a card to replay it.
-              </p>
-            </div>
+            <DetailPlaceholder />
           )}
         </div>
       ) : null}

@@ -1,17 +1,20 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { DM_Sans, Space_Mono } from "next/font/google";
 import "./globals.css";
 import { AppNav } from "@/components/shell/app-nav";
-import { AmbientLayer } from "@/components/ui/ambient-layer";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+// Soft Pop's fonts (REDESIGN_V2 section 3). DM Sans is variable (wght, opsz);
+// Space Mono is not, so its two weights are listed.
+const dmSans = DM_Sans({
+  variable: "--font-dm-sans",
   subsets: ["latin"],
+  axes: ["opsz"],
 });
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
+const spaceMono = Space_Mono({
+  variable: "--font-space-mono",
   subsets: ["latin"],
+  weight: ["400", "700"],
 });
 
 export const metadata: Metadata = {
@@ -22,8 +25,8 @@ export const metadata: Metadata = {
 
 export const viewport: Viewport = {
   viewportFit: "cover",
-  // Matches --surface-base (D-THEME-1).
-  themeColor: "#0d0e11",
+  // Matches the dark --background (D-THEME-1, D-THEME-8).
+  themeColor: "#000000",
   width: "device-width",
   initialScale: 1,
 };
@@ -32,7 +35,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${geistSans.variable} ${geistMono.variable} dark h-full antialiased`}
+      className={`${dmSans.variable} ${spaceMono.variable} dark h-full antialiased`}
       style={{ colorScheme: "dark" }}
     >
       <head>
@@ -40,7 +43,6 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
         <link rel="preconnect" href="https://www.youtube.com" />
       </head>
       <body className="min-h-full flex flex-col">
-        <AmbientLayer />
         {children}
         <AppNav />
       </body>

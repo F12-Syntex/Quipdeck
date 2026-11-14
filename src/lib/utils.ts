@@ -1,49 +1,19 @@
 import { createCn } from "cn/config"
 
 /**
- * Custom tokens from the `@theme` block in src/app/globals.css.
- * Keep these in step with the file: utils.test.ts reads globals.css and fails
- * if either list drifts.
+ * The project's class merge (D-THEME-7). Since UI-V2 the design system uses
+ * stock Tailwind and shadcn tokens only (D-THEME-8): globals.css defines no
+ * custom `--text-*` size or `--color-*` token beyond the shadcn names, so the
+ * merge needs no extension. utils.test.ts reads globals.css and fails if a
+ * custom token comes back without being listed here.
  */
 
-/** `--text-*` tokens (font-size utilities: `text-heading`, `text-body`, ...). */
-export const CUSTOM_TEXT_SIZES = [
-  "cue-stage",
-  "cue",
-  "title",
-  "heading",
-  "line",
-  "line-compact",
-  "body",
-  "label",
-  "eyebrow",
-  "caption",
-] as const
+/** Custom `--text-*` size tokens in globals.css. None: stock sizes only. */
+export const CUSTOM_TEXT_SIZES = [] as const
 
-/** Quipdeck `--color-*` tokens (`text-fg-secondary`, `bg-surface-base`, ...). */
-export const CUSTOM_COLORS = [
-  "surface-base",
-  "surface-raised",
-  "surface-scrim",
-  "fg-primary",
-  "fg-secondary",
-  "fg-tertiary",
-  "fg-inverse",
-  "hairline",
-  "control",
-  "control-hover",
-  "control-pressed",
-  "focus",
-] as const
+/** Custom `--color-*` tokens beyond the shadcn names. None. */
+export const CUSTOM_COLORS = [] as const
 
-/** Shared merge config: custom sizes are font-size, custom colours stay colour. */
-export const mergeConfig = {
-  extend: {
-    classGroups: {
-      "font-size": [{ text: [...CUSTOM_TEXT_SIZES] }],
-      "text-color": [{ text: [...CUSTOM_COLORS] }],
-    },
-  },
-}
+export const mergeConfig = {}
 
 export const cn = createCn(mergeConfig)

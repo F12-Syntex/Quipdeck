@@ -12,8 +12,9 @@ import { heartPop, heartScale } from "@/components/ui/motion"
 /*
  * Heart (D-SAVE-5). Ported from 21st.dev "Heart Favorite" 10627: a toggle
  * whose heart pops once when it fills. Changes from the source: Base UI
- * Toggle (aria-pressed, controlled or not), the 44 px glass circle instead
- * of a hover-tinted ghost button, fg-primary fill instead of red-500, a
+ * Toggle (aria-pressed, controlled or not), a 48 px stock Button circle
+ * (outline when off, default indigo with a filled heart when on; REDESIGN_V2
+ * 5.2) instead of a hover-tinted ghost button, no red-500 and no glow, a
  * 1.18 pop (heartScale / heartPop) instead of 1.3, a pop on save only, by
  * press or, when controlled, by any false -> true change of `pressed` (never
  * on mount, so an already-saved heart in the Saved detail stays still, and
@@ -51,7 +52,7 @@ function HeartToggle({
       aria-label={label}
       className={(state) =>
         cn(
-          buttonVariants({ variant: "glass", size: "circle" }),
+          buttonVariants({ variant: state.pressed ? "default" : "outline", size: "circle-lg" }),
           typeof className === "function" ? className(state) : className
         )
       }

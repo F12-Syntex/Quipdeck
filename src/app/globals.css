@@ -2,101 +2,169 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
-/*
- * Quipdeck design system (P2). Dark only (D-THEME-1).
- * Every token is documented in DESIGN_SYSTEM.md with its purpose and users.
- * Signature: "one pane of glass, lit from behind" (D-THEME-2).
- */
-
 @custom-variant dark (&:is(.dark *));
 
-/* Always emit the recipe utilities, so screens and the showcase can rely on */
-/* them even before a file in the scan uses them.                           */
-@source inline("glass-paint glass-rim glass-chrome glass-chrome-strong glass-control glass-bubble hue-tag hue-bubble hue-scope focus-ring skeleton-shimmer text-cue text-cue-stage text-title text-heading text-line text-line-compact text-body text-label text-eyebrow text-caption animate-hint-pulse animate-shimmer animate-ready-fade motion-reduce:animate-none");
+/*
+ * Theme: "Soft Pop" from tweakcn (https://tweakcn.com/r/themes/soft-pop.json),
+ * Apache-2.0, https://github.com/jnsahaj/tweakcn. The :root (light) and .dark
+ * blocks below are copied verbatim, with the one change docs/REDESIGN_V2.md
+ * section 2.2 allows inside them: the three font lines point at the
+ * next/font variables. The app ships dark (<html class="dark">); the light
+ * block keeps the theme whole and is used for screenshots.
+ * Everything Quipdeck adds lives in its own block after @theme inline.
+ */
 
-/* ------------------------------------------------------------------ */
-/* Move hue (D-THEME-3). Screens publish --move-hue on <html>; local   */
-/* tints may also set it on an element (moveHueStyle in move-hue.ts).  */
-/* The ambient colours below are registered <color>s so a hue change   */
-/* crossfades the colour (oklab), never sweeps the hue wheel.          */
-/* ------------------------------------------------------------------ */
-
-@property --move-hue {
-  syntax: "<number>";
-  inherits: true;
-  initial-value: 275;
+:root {
+  --background: oklch(0.9789 0.0082 121.6272);
+  --foreground: oklch(0 0 0);
+  --card: oklch(1.0000 0 0);
+  --card-foreground: oklch(0 0 0);
+  --popover: oklch(1.0000 0 0);
+  --popover-foreground: oklch(0 0 0);
+  --primary: oklch(0.5106 0.2301 276.9656);
+  --primary-foreground: oklch(1.0000 0 0);
+  --secondary: oklch(0.7038 0.1230 182.5025);
+  --secondary-foreground: oklch(1.0000 0 0);
+  --muted: oklch(0.9551 0 0);
+  --muted-foreground: oklch(0.3211 0 0);
+  --accent: oklch(0.7686 0.1647 70.0804);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(0.6368 0.2078 25.3313);
+  --destructive-foreground: oklch(1.0000 0 0);
+  --border: oklch(0 0 0);
+  --input: oklch(0.5555 0 0);
+  --ring: oklch(0.7853 0.1041 274.7134);
+  --chart-1: oklch(0.5106 0.2301 276.9656);
+  --chart-2: oklch(0.7038 0.1230 182.5025);
+  --chart-3: oklch(0.7686 0.1647 70.0804);
+  --chart-4: oklch(0.6559 0.2118 354.3084);
+  --chart-5: oklch(0.7227 0.1920 149.5793);
+  --radius: 1rem;
+  --sidebar: oklch(0.9789 0.0082 121.6272);
+  --sidebar-foreground: oklch(0 0 0);
+  --sidebar-primary: oklch(0.5106 0.2301 276.9656);
+  --sidebar-primary-foreground: oklch(1.0000 0 0);
+  --sidebar-accent: oklch(0.7686 0.1647 70.0804);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(0 0 0);
+  --sidebar-ring: oklch(0.7853 0.1041 274.7134);
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
+  --shadow-color: #1a1a1a;
+  --shadow-opacity: 0.05;
+  --shadow-blur: 0px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 0px;
+  --letter-spacing: normal;
+  --spacing: 0.25rem;
+  --shadow-2xs: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.03);
+  --shadow-xs: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.03);
+  --shadow-sm: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.05), 0px 1px 2px -1px hsl(0 0% 10.1961% / 0.05);
+  --shadow: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.05), 0px 1px 2px -1px hsl(0 0% 10.1961% / 0.05);
+  --shadow-md: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.05), 0px 2px 4px -1px hsl(0 0% 10.1961% / 0.05);
+  --shadow-lg: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.05), 0px 4px 6px -1px hsl(0 0% 10.1961% / 0.05);
+  --shadow-xl: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.05), 0px 8px 10px -1px hsl(0 0% 10.1961% / 0.05);
+  --shadow-2xl: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.13);
+  --tracking-normal: normal;
 }
 
-@property --hue-glow {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: transparent;
-}
-
-@property --hue-glow-soft {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: transparent;
-}
-
-@property --hue-shadow {
-  syntax: "<color>";
-  inherits: true;
-  initial-value: transparent;
-}
-
-/* Ambient drift: animated as two registered offsets in a stepped, slow   */
-/* cycle, so the glow repaints a few times a second inside the root layer */
-/* (grain keeps dithering it) instead of becoming a composited texture,   */
-/* which bands and tiles on dark gradients.                               */
-@property --drift-x {
-  syntax: "<percentage>";
-  inherits: false;
-  initial-value: 0%;
-}
-
-@property --drift-y {
-  syntax: "<percentage>";
-  inherits: false;
-  initial-value: 0%;
+.dark {
+  --background: oklch(0 0 0);
+  --foreground: oklch(1.0000 0 0);
+  --card: oklch(0.2455 0.0217 257.2823);
+  --card-foreground: oklch(1.0000 0 0);
+  --popover: oklch(0.2455 0.0217 257.2823);
+  --popover-foreground: oklch(1.0000 0 0);
+  --primary: oklch(0.6801 0.1583 276.9349);
+  --primary-foreground: oklch(0 0 0);
+  --secondary: oklch(0.7845 0.1325 181.9120);
+  --secondary-foreground: oklch(0 0 0);
+  --muted: oklch(0.3211 0 0);
+  --muted-foreground: oklch(0.8452 0 0);
+  --accent: oklch(0.8790 0.1534 91.6054);
+  --accent-foreground: oklch(0 0 0);
+  --destructive: oklch(0.7106 0.1661 22.2162);
+  --destructive-foreground: oklch(0 0 0);
+  --border: oklch(0.4459 0 0);
+  --input: oklch(1.0000 0 0);
+  --ring: oklch(0.6801 0.1583 276.9349);
+  --chart-1: oklch(0.6801 0.1583 276.9349);
+  --chart-2: oklch(0.7845 0.1325 181.9120);
+  --chart-3: oklch(0.8790 0.1534 91.6054);
+  --chart-4: oklch(0.7253 0.1752 349.7607);
+  --chart-5: oklch(0.8003 0.1821 151.7110);
+  --radius: 1rem;
+  --sidebar: oklch(0 0 0);
+  --sidebar-foreground: oklch(1.0000 0 0);
+  --sidebar-primary: oklch(0.6801 0.1583 276.9349);
+  --sidebar-primary-foreground: oklch(0 0 0);
+  --sidebar-accent: oklch(0.8790 0.1534 91.6054);
+  --sidebar-accent-foreground: oklch(0 0 0);
+  --sidebar-border: oklch(1.0000 0 0);
+  --sidebar-ring: oklch(0.6801 0.1583 276.9349);
+  --font-sans: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-serif: var(--font-dm-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-space-mono), ui-monospace, monospace;
+  --shadow-color: #1a1a1a;
+  --shadow-opacity: 0.05;
+  --shadow-blur: 0px;
+  --shadow-spread: 0px;
+  --shadow-offset-x: 0px;
+  --shadow-offset-y: 0px;
+  --letter-spacing: normal;
+  --spacing: 0.25rem;
+  --shadow-2xs: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.03);
+  --shadow-xs: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.03);
+  --shadow-sm: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.05), 0px 1px 2px -1px hsl(0 0% 10.1961% / 0.05);
+  --shadow: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.05), 0px 1px 2px -1px hsl(0 0% 10.1961% / 0.05);
+  --shadow-md: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.05), 0px 2px 4px -1px hsl(0 0% 10.1961% / 0.05);
+  --shadow-lg: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.05), 0px 4px 6px -1px hsl(0 0% 10.1961% / 0.05);
+  --shadow-xl: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.05), 0px 8px 10px -1px hsl(0 0% 10.1961% / 0.05);
+  --shadow-2xl: 0px 0px 0px 0px hsl(0 0% 10.1961% / 0.13);
 }
 
 @theme inline {
-  /* shadcn mapping (kept: untouched primitives use these names) */
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-  --font-heading: var(--font-sans);
-  --color-sidebar-ring: var(--sidebar-ring);
-  --color-sidebar-border: var(--sidebar-border);
-  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
-  --color-sidebar-accent: var(--sidebar-accent);
-  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
-  --color-sidebar-primary: var(--sidebar-primary);
-  --color-sidebar-foreground: var(--sidebar-foreground);
-  --color-sidebar: var(--sidebar);
-  --color-chart-5: var(--chart-5);
-  --color-chart-4: var(--chart-4);
-  --color-chart-3: var(--chart-3);
-  --color-chart-2: var(--chart-2);
-  --color-chart-1: var(--chart-1);
-  --color-ring: var(--ring);
-  --color-input: var(--input);
-  --color-border: var(--border);
-  --color-destructive: var(--destructive);
-  --color-accent-foreground: var(--accent-foreground);
-  --color-accent: var(--accent);
-  --color-muted-foreground: var(--muted-foreground);
-  --color-muted: var(--muted);
-  --color-secondary-foreground: var(--secondary-foreground);
-  --color-secondary: var(--secondary);
-  --color-primary-foreground: var(--primary-foreground);
-  --color-primary: var(--primary);
-  --color-popover-foreground: var(--popover-foreground);
-  --color-popover: var(--popover);
-  --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+
+  --font-sans: var(--font-sans);
+  --font-mono: var(--font-mono);
+  --font-serif: var(--font-serif);
+  --font-heading: var(--font-sans);
+
+  /* base-nova radius scale, not tweakcn's +/- 4px lines (REDESIGN_V2 2.2). */
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -105,90 +173,20 @@
   --radius-3xl: calc(var(--radius) * 2.2);
   --radius-4xl: calc(var(--radius) * 2.6);
 
-  /* Quipdeck colour tokens -> utilities (bg-surface-base, text-fg-secondary, ...) */
-  --color-surface-base: var(--surface-base);
-  --color-surface-raised: var(--surface-raised);
-  --color-surface-scrim: var(--surface-scrim);
-  --color-fg-primary: var(--fg-primary);
-  --color-fg-secondary: var(--fg-secondary);
-  --color-fg-tertiary: var(--fg-tertiary);
-  --color-fg-inverse: var(--fg-inverse);
-  --color-hairline: var(--hairline);
-  --color-control: var(--control-fill);
-  --color-control-hover: var(--control-fill-hover);
-  --color-control-pressed: var(--control-fill-pressed);
-  --color-focus: var(--focus-ring);
+  --shadow-2xs: var(--shadow-2xs);
+  --shadow-xs: var(--shadow-xs);
+  --shadow-sm: var(--shadow-sm);
+  --shadow: var(--shadow);
+  --shadow-md: var(--shadow-md);
+  --shadow-lg: var(--shadow-lg);
+  --shadow-xl: var(--shadow-xl);
+  --shadow-2xl: var(--shadow-2xl);
 
-  /* Radii -> rounded-card, rounded-stage, rounded-sheet, ... */
-  --radius-card: 32px;
-  --radius-stage: 40px;
-  --radius-sheet: 32px;
-  --radius-pane: 32px;
-  --radius-group: 24px;
-  --radius-bubble: 20px;
-  --radius-clip: 20px;
-  --radius-field: 9999px;
-  --radius-pill: 9999px;
+  /* No --tracking-* lines: calc(normal - 0.025em) is invalid (2.2, item 3). */
 
-  /* Type scale. The cue is the largest text in the product (D-THEME-4). */
-  --text-cue-stage: 3.5rem;
-  --text-cue-stage--line-height: 1.06;
-  --text-cue-stage--letter-spacing: -0.03em;
-  --text-cue-stage--font-weight: 600;
-  --text-cue: 2.125rem;
-  --text-cue--line-height: 1.12;
-  --text-cue--letter-spacing: -0.022em;
-  --text-cue--font-weight: 600;
-  --text-title: 1.75rem;
-  --text-title--line-height: 1.15;
-  --text-title--letter-spacing: -0.02em;
-  --text-title--font-weight: 600;
-  --text-heading: 1.125rem;
-  --text-heading--line-height: 1.3;
-  --text-heading--letter-spacing: -0.01em;
-  --text-heading--font-weight: 600;
-  --text-line: 1rem;
-  --text-line--line-height: 1.25rem;
-  --text-line-compact: 0.9375rem;
-  --text-line-compact--line-height: 1.125rem;
-  --text-body: 0.9375rem;
-  --text-body--line-height: 1.4;
-  --text-label: 0.8125rem;
-  --text-label--line-height: 1.2;
-  --text-label--letter-spacing: 0.005em;
-  --text-label--font-weight: 500;
-  --text-eyebrow: 0.75rem;
-  --text-eyebrow--line-height: 1.2;
-  --text-eyebrow--letter-spacing: 0.08em;
-  --text-eyebrow--font-weight: 600;
-  --text-caption: 0.8125rem;
-  --text-caption--line-height: 1.3;
-
-  /* Motion -> ease-soft, ease-glide, animate-* */
+  /* Quipdeck motion: ease-soft, animate-ready-fade (clip fade-in). */
   --ease-soft: cubic-bezier(0.22, 1, 0.36, 1);
-  --ease-glide: cubic-bezier(0.65, 0, 0.35, 1);
-  --animate-hint-pulse: hint-pulse var(--dur-pulse) ease-in-out infinite;
-  --animate-shimmer: shimmer var(--dur-shimmer) linear infinite;
   --animate-ready-fade: ready-fade var(--dur-ready) var(--ease-soft) both;
-
-  @keyframes hint-pulse {
-    0%,
-    100% {
-      opacity: 1;
-    }
-    50% {
-      opacity: 0.62;
-    }
-  }
-
-  @keyframes shimmer {
-    from {
-      background-position: 150% 0;
-    }
-    to {
-      background-position: -50% 0;
-    }
-  }
 
   @keyframes ready-fade {
     from {
@@ -201,457 +199,59 @@
 }
 
 /* ------------------------------------------------------------------ */
-/* Values. Dark only: everything lives on :root.                       */
+/* Quipdeck additions. Not part of Soft Pop.                           */
 /* ------------------------------------------------------------------ */
 
+/*
+ * Text on a move-colour fill. src/lib/move-color.ts sets --move and
+ * --move-foreground per card or group from these. Dark: black on all five
+ * chart colours (7.0 to 14.6:1). Light: Soft Pop's light chart-1 is a dark
+ * indigo, so it takes white; the other four stay black.
+ * scripts/contrast.cjs checks every pair in both modes.
+ */
 :root {
-  /* Surfaces */
-  --surface-base: oklch(0.165 0.006 270); /* #0d0e11, themeColor */
-  --surface-base-top: oklch(0.19 0.008 270);
-  --surface-base-bottom: oklch(0.135 0.005 270);
-  --surface-raised: oklch(0.235 0.008 270); /* solid chrome, fallback fill */
-  --surface-scrim: oklch(0.08 0.004 270 / 0.6); /* behind the sheet */
+  --chart-1-foreground: oklch(1 0 0);
+  --chart-2-foreground: oklch(0 0 0);
+  --chart-3-foreground: oklch(0 0 0);
+  --chart-4-foreground: oklch(0 0 0);
+  --chart-5-foreground: oklch(0 0 0);
 
-  /* Text (contrast pairs in DESIGN_SYSTEM.md) */
-  --fg-primary: oklch(0.97 0.003 270);
-  --fg-secondary: oklch(0.88 0.008 270);
-  --fg-tertiary: oklch(0.82 0.01 270);
-  --fg-inverse: oklch(0.2 0.01 270);
-
-  /* Lines */
-  --hairline: oklch(1 0 0 / 0.1);
-
-  /* Painted glass: rotating card faces, no backdrop-filter (D-FLIP-2) */
-  --glass-fill-top: oklch(1 0 0 / 0.06);
-  --glass-fill-bottom: oklch(1 0 0 / 0.03);
-  --glass-shade: oklch(0.14 0.03 var(--move-hue) / 0.14);
-  --glass-edge: oklch(1 0 0 / 0.1);
-  --glass-rim: oklch(1 0 0 / 0.32); /* top-left only (glass-rim) */
-  --glass-rim-low: oklch(1 0 0 / 0.04);
-  --glass-specular: oklch(1 0 0 / 0.12);
-  --specular-sweep: linear-gradient(
-    105deg,
-    transparent 35%,
-    oklch(1 0 0 / 0.09) 50%,
-    transparent 65%
-  );
-
-  /* Blurred glass: chrome only (nav, search, sheet, pane, prev/next) */
-  --chrome-fill: oklch(0.24 0.008 270 / 0.62);
-  --chrome-rim: oklch(1 0 0 / 0.2); /* top highlight on chrome */
-  --chrome-fill-strong: oklch(0.22 0.008 270 / 0.82);
-  --chrome-fill-solid: oklch(0.235 0.008 270);
-  --chrome-blur: 24px;
-  --chrome-saturate: 1.4;
-
-  /* Small glass controls inside the card (no blur) */
-  --control-fill: oklch(1 0 0 / 0.08);
-  --control-fill-hover: oklch(1 0 0 / 0.13);
-  --control-fill-pressed: oklch(1 0 0 / 0.06);
-  --control-active: oklch(1 0 0 / 0.16); /* nav active capsule */
-
-  /* Hue-derived colours (root: active card; see @property above) */
-  --hue-glow: oklch(0.44 0.12 var(--move-hue) / 0.42);
-  --hue-glow-soft: oklch(0.36 0.07 var(--move-hue) / 0.3);
-  --hue-shadow: oklch(0.2 0.06 var(--move-hue) / 0.7);
-
-  /* Focus ring: >= 3:1 on every surface */
-  --focus-ring: oklch(0.9 0.06 var(--move-hue));
-  --focus-ring-width: 2px;
-  --focus-ring-offset: 2px;
-
-  /* Grain: static SVG turbulence, grey, contrast-stretched (x4 around mid */
-  /* grey) so soft-light at 14% gives sigma 2 to 3 / 255 on the base.     */
-  --grain: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='3' stitchTiles='stitch'/%3E%3CfeColorMatrix values='1 0 0 0 0 1 0 0 0 0 1 0 0 0 0 0 0 0 0 1'/%3E%3CfeComponentTransfer%3E%3CfeFuncR type='linear' slope='4' intercept='-1.5'/%3E%3CfeFuncG type='linear' slope='4' intercept='-1.5'/%3E%3CfeFuncB type='linear' slope='4' intercept='-1.5'/%3E%3C/feComponentTransfer%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
-  --grain-opacity: 0.14;
-
-  /* Motion (JS twins in src/components/ui/motion.ts) */
+  /* Motion durations (JS twins in src/components/ui/motion.ts). */
   --dur-fast: 150ms;
   --dur-base: 240ms;
   --dur-sheet: 280ms;
-  --dur-crossfade: 150ms;
-  --dur-ready: 320ms;
-  --dur-hue: 1400ms;
-  --dur-drift: 56s;
-  --dur-pulse: 4s;
-  --dur-shimmer: 2.4s;
-
-  /* shadcn names, mapped onto the tokens above */
-  --background: var(--surface-base);
-  --foreground: var(--fg-primary);
-  --card: var(--surface-raised);
-  --card-foreground: var(--fg-primary);
-  --popover: var(--chrome-fill-solid);
-  --popover-foreground: var(--fg-primary);
-  --primary: var(--fg-primary);
-  --primary-foreground: var(--fg-inverse);
-  --secondary: oklch(0.27 0.008 270);
-  --secondary-foreground: var(--fg-primary);
-  --muted: oklch(0.25 0.007 270);
-  --muted-foreground: var(--fg-secondary);
-  --accent: oklch(0.27 0.008 270);
-  --accent-foreground: var(--fg-primary);
-  --destructive: oklch(0.72 0.17 22);
-  --border: var(--hairline);
-  --input: oklch(1 0 0 / 0.14);
-  --ring: var(--focus-ring);
-  --chart-1: oklch(0.87 0 0);
-  --chart-2: oklch(0.556 0 0);
-  --chart-3: oklch(0.439 0 0);
-  --chart-4: oklch(0.371 0 0);
-  --chart-5: oklch(0.269 0 0);
-  --radius: 0.875rem;
-  --sidebar: var(--surface-raised);
-  --sidebar-foreground: var(--fg-primary);
-  --sidebar-primary: var(--fg-primary);
-  --sidebar-primary-foreground: var(--fg-inverse);
-  --sidebar-accent: oklch(0.27 0.008 270);
-  --sidebar-accent-foreground: var(--fg-primary);
-  --sidebar-border: var(--hairline);
-  --sidebar-ring: var(--focus-ring);
-
-  color-scheme: dark;
-  transition:
-    --hue-glow var(--dur-hue) var(--ease-glide),
-    --hue-glow-soft var(--dur-hue) var(--ease-glide),
-    --hue-shadow var(--dur-hue) var(--ease-glide);
+  --dur-ready: 200ms;
 }
 
-/* Reduced motion (D-FLIP-3): nothing drifts, pulses or shimmers. The hue  */
-/* still changes, as a short colour fade with no spatial movement.         */
+.dark {
+  --chart-1-foreground: oklch(0 0 0);
+}
+
+/* Reduced motion (D-FLIP-3): the sheet and the clip fade are instant. */
 @media (prefers-reduced-motion: reduce) {
   :root {
     --dur-base: 0ms;
     --dur-sheet: 0ms;
     --dur-ready: 0ms;
-    --dur-hue: 400ms;
   }
 }
-
-/* ------------------------------------------------------------------ */
-/* Base                                                                */
-/* ------------------------------------------------------------------ */
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
-  html {
-    @apply font-sans;
-    /* The canvas carries the base; body stays transparent so the fixed */
-    /* ambient layer (z-index -1) shows through.                       */
-    background-color: var(--surface-base);
-  }
   body {
-    @apply text-foreground;
-    background-color: transparent;
+    @apply bg-background text-foreground font-sans;
+    letter-spacing: var(--tracking-normal);
   }
-  :focus-visible,
-  [data-focus-visible] {
-    outline: var(--focus-ring-width) solid var(--focus-ring);
-    outline-offset: var(--focus-ring-offset);
-  }
-  ::selection {
-    background-color: oklch(0.6 0.12 var(--move-hue) / 0.4);
-  }
-}
-
-/* ------------------------------------------------------------------ */
-/* Recipes                                                             */
-/* ------------------------------------------------------------------ */
-
-/* Clear focus ring for components that reset outline. */
-@utility focus-ring {
-  &:focus-visible,
-  &[data-focus-visible] {
-    outline: var(--focus-ring-width) solid var(--focus-ring);
-    outline-offset: var(--focus-ring-offset);
-  }
-}
-
-/* Painted glass for the rotating card faces (D-FLIP-2). No backdrop    */
-/* sampling: a translucent fill over a light hue-tinted shade, a        */
-/* top-left specular wash, a hairline edge, a faint bottom rim and a    */
-/* deep shadow tinted by the move hue. The bright rim is glass-rim      */
-/* (card faces always use both). Same at every angle in every browser. */
-@utility glass-paint {
-  background-image:
-    radial-gradient(110% 65% at 8% 0%, var(--glass-specular), transparent 62%),
-    linear-gradient(180deg, var(--glass-fill-top), var(--glass-fill-bottom)),
-    linear-gradient(var(--glass-shade), var(--glass-shade));
-  box-shadow:
-    inset 0 0 0 1px var(--glass-edge),
-    inset 0 -1px 0 0 var(--glass-rim-low),
-    0 1px 2px 0 oklch(0 0 0 / 0.3),
-    0 40px 90px -30px var(--hue-shadow);
-}
-
-/* Refraction rim: a 1 px ring lit from the top-left corner only        */
-/* (--glass-rim), fading out along the top and left edges, with a faint */
-/* catch at the bottom-right (--glass-rim-low). Needs a positioned      */
-/* element (relative or absolute). Pairs with glass-paint.              */
-@utility glass-rim {
-  &::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    padding: 1px;
-    pointer-events: none;
-    background:
-      radial-gradient(
-        120% 85% at 0% 0%,
-        var(--glass-rim) 0%,
-        oklch(1 0 0 / 0.1) 38%,
-        transparent 70%
-      ),
-      radial-gradient(
-        90% 70% at 100% 100%,
-        var(--glass-rim-low) 0%,
-        transparent 70%
-      );
-    -webkit-mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask:
-      linear-gradient(#000 0 0) content-box,
-      linear-gradient(#000 0 0);
-    mask-composite: exclude;
-  }
-}
-
-/* Blurred glass for chrome that never rotates: nav pill, search field, */
-/* sheet, desktop pane, desktop previous / next. Solid-enough fallback  */
-/* when backdrop-filter is missing or transparency is reduced.          */
-@utility glass-chrome {
-  background-color: var(--chrome-fill);
-  -webkit-backdrop-filter: blur(var(--chrome-blur)) saturate(var(--chrome-saturate));
-  backdrop-filter: blur(var(--chrome-blur)) saturate(var(--chrome-saturate));
-  box-shadow:
-    inset 0 1px 0 0 var(--chrome-rim),
-    inset 0 0 0 1px var(--glass-edge),
-    0 16px 40px -16px oklch(0 0 0 / 0.6);
-
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    background-color: var(--chrome-fill-solid);
-  }
-  @media (prefers-reduced-transparency: reduce) {
-    background-color: var(--chrome-fill-solid);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-
-/* Heavier chrome for large panels (sheet, pane): more opaque fill. */
-@utility glass-chrome-strong {
-  background-color: var(--chrome-fill-strong);
-  -webkit-backdrop-filter: blur(32px) saturate(var(--chrome-saturate));
-  backdrop-filter: blur(32px) saturate(var(--chrome-saturate));
-  box-shadow:
-    inset 0 1px 0 0 var(--chrome-rim),
-    inset 0 0 0 1px var(--glass-edge),
-    0 -12px 48px -12px oklch(0 0 0 / 0.55);
-
-  @supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
-    background-color: var(--chrome-fill-solid);
-  }
-  @media (prefers-reduced-transparency: reduce) {
-    background-color: var(--chrome-fill-solid);
-    -webkit-backdrop-filter: none;
-    backdrop-filter: none;
-  }
-}
-
-/* Small translucent control inside the card (heart, mute): no blur. */
-@utility glass-control {
-  background-color: var(--control-fill);
-  box-shadow:
-    inset 0 1px 0 0 oklch(1 0 0 / 0.12),
-    inset 0 0 0 1px var(--glass-edge);
-}
-
-/* Hue tints (D-THEME-3). Computed where used, so a local --move-hue   */
-/* (moveHueStyle) tints that element only.                             */
-@utility hue-tag {
-  background-color: oklch(0.62 0.14 var(--move-hue) / 0.16);
-  color: oklch(0.9 0.06 var(--move-hue));
-  box-shadow: inset 0 0 0 1px oklch(0.78 0.12 var(--move-hue) / 0.3);
-}
-
-@utility hue-bubble {
-  background-color: oklch(0.58 0.14 var(--move-hue) / 0.24);
-  box-shadow:
-    inset 0 1px 0 0 oklch(1 0 0 / 0.1),
-    inset 0 0 0 1px oklch(0.8 0.11 var(--move-hue) / 0.22);
-}
-
-/* Re-derive every hue-based token on this element, so a local         */
-/* --move-hue (moveHueStyle) also retints glass shade, card shadow,      */
-/* glow and focus ring. Same formulas as :root; keep them in step.      */
-@utility hue-scope {
-  --glass-shade: oklch(0.14 0.03 var(--move-hue) / 0.14);
-  --hue-glow: oklch(0.44 0.12 var(--move-hue) / 0.42);
-  --hue-glow-soft: oklch(0.36 0.07 var(--move-hue) / 0.3);
-  --hue-shadow: oklch(0.2 0.06 var(--move-hue) / 0.7);
-  --focus-ring: oklch(0.9 0.06 var(--move-hue));
-}
-
-/* Neutral bubble (trigger line, the other speaker). */
-@utility glass-bubble {
-  background-color: oklch(1 0 0 / 0.07);
-  box-shadow:
-    inset 0 1px 0 0 oklch(1 0 0 / 0.08),
-    inset 0 0 0 1px oklch(1 0 0 / 0.06);
-}
-
-/* Skeleton shimmer surface (stops under reduced motion). */
-@utility skeleton-shimmer {
-  background-color: oklch(1 0 0 / 0.05);
-  background-image: linear-gradient(
-    100deg,
-    transparent 30%,
-    oklch(1 0 0 / 0.05) 50%,
-    transparent 70%
-  );
-  background-size: 200% 100%;
-  background-repeat: no-repeat;
-}
-
-/* ------------------------------------------------------------------ */
-/* Ambient layer (D-THEME-2): base, glow, grain. Mounted once in the   */
-/* root layout by <AmbientLayer />. Fixed, behind everything, inert.   */
-/* ------------------------------------------------------------------ */
-
-.ambient {
-  position: fixed;
-  inset: 0;
-  z-index: -1;
-  overflow: hidden;
-  pointer-events: none;
-  background: linear-gradient(
-    180deg,
-    var(--surface-base-top) 0%,
-    var(--surface-base) 45%,
-    var(--surface-base-bottom) 100%
-  );
-}
-
-/* A local, in-flow copy of the ambient base for demos (showcase card    */
-/* frames). Put .ambient-glow / -vignette / -grain inside; pair with     */
-/* hue-scope and moveHueStyle to light it in another hue.              */
-.ambient-frame {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  background: linear-gradient(
-    180deg,
-    var(--surface-base-top) 0%,
-    var(--surface-base) 45%,
-    var(--surface-base-bottom) 100%
-  );
-}
-
-.ambient-frame > .ambient-glow,
-.ambient-frame > .ambient-vignette,
-.ambient-frame > .ambient-grain {
-  z-index: -1;
-}
-
-.ambient-glow {
-  position: absolute;
-  inset: 0;
-  /* Phone: one glow behind the card, a faint counter-light low left. */
-  background:
-    radial-gradient(
-      60% 46% at calc(50% + var(--drift-x)) calc(44% + var(--drift-y)),
-      var(--hue-glow) 0%,
-      color-mix(in oklab, var(--hue-glow) 55%, transparent) 38%,
-      color-mix(in oklab, var(--hue-glow) 18%, transparent) 68%,
-      transparent 100%
-    ),
-    radial-gradient(
-      55% 40% at calc(18% - var(--drift-x)) 92%,
-      var(--hue-glow-soft) 0%,
-      transparent 100%
-    );
-  animation: ambient-drift var(--dur-drift) steps(90, jump-none) infinite
-    alternate;
-}
-
-/* Desktop stage: the light sits behind the card's right half, so the  */
-/* open side of the landscape front reads as lit, and the cue stays on */
-/* darker ground (Gate 1 carry-over).                                  */
-@media (min-width: 1024px) {
-  .ambient-glow {
-    background:
-      radial-gradient(
-        42% 52% at calc(68% + var(--drift-x)) calc(48% + var(--drift-y)),
-        var(--hue-glow) 0%,
-        color-mix(in oklab, var(--hue-glow) 55%, transparent) 36%,
-        color-mix(in oklab, var(--hue-glow) 16%, transparent) 70%,
-        transparent 100%
-      ),
-      radial-gradient(
-        38% 34% at calc(22% - var(--drift-x)) 88%,
-        var(--hue-glow-soft) 0%,
-        transparent 100%
-      ),
-      radial-gradient(
-        30% 26% at 92% 12%,
-        color-mix(in oklab, var(--hue-glow-soft) 60%, transparent) 0%,
-        transparent 100%
-      );
-  }
-}
-
-.ambient-grain {
-  position: absolute;
-  inset: 0;
-  background-image: var(--grain);
-  background-size: 180px 180px;
-  opacity: var(--grain-opacity);
-  mix-blend-mode: soft-light;
-}
-
-/* Vignette keeps the edges quiet so the eye stays on the card. */
-.ambient-vignette {
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(
-    120% 90% at 50% 45%,
-    transparent 55%,
-    oklch(0.08 0.004 270 / 0.55) 100%
-  );
-}
-
-/* One moving thing at a time: a screen may pause the drift while the */
-/* flip or the clip moves by setting data-ambient="still" on <html>.   */
-:root[data-ambient="still"] .ambient-glow {
-  animation-play-state: paused;
-}
-
-@keyframes ambient-drift {
-  0% {
-    --drift-x: -3%;
-    --drift-y: -1.5%;
-  }
-  35% {
-    --drift-x: 0%;
-    --drift-y: 2%;
-  }
-  70% {
-    --drift-x: 2.5%;
-    --drift-y: 0.5%;
-  }
-  100% {
-    --drift-x: 3.5%;
-    --drift-y: -1%;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .ambient-glow {
-    animation: none;
+  /*
+   * Keyboard focus for elements that draw no ring of their own (the card,
+   * headings focused by script). Anything with outline-none draws the stock
+   * shadcn ring instead. Full-opacity --ring: 3:1 or better on black and
+   * on card (scripts/contrast.cjs).
+   */
+  :focus-visible {
+    outline: 2px solid var(--ring);
+    outline-offset: 2px;
   }
 }

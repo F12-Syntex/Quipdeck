@@ -17,9 +17,6 @@ export const flipSpring = {
 /** Reduced-motion replacement for the flip: a 150 ms opacity crossfade. */
 export const flipCrossfade = { duration: 0.15, ease: "linear" } as const;
 
-/** Specular sweep across the card during the flip, once. Removed under reduced motion. */
-export const specularSweep = { duration: 0.6, ease: [0.65, 0, 0.35, 1] } as const;
-
 /**
  * Heart fill: 1 -> 1.18 -> 1 over 300 ms, on save only. Under reduced motion
  * the heart just changes state. A tween, not a spring: framer-motion springs
@@ -43,19 +40,13 @@ export const capsuleSpring = {
   mass: 1,
 } as const;
 
-/** Generic UI transitions (sheet rise, fades). */
+/** Generic UI transitions (sheet rise, fades). CSS twins: --ease-soft, --dur-*. */
 export const easeSoft = [0.22, 1, 0.36, 1] as const;
-export const easeGlide = [0.65, 0, 0.35, 1] as const;
 export const duration = {
   fast: 0.15,
   base: 0.24,
   sheet: 0.28,
-  crossfade: 0.15,
-  ready: 0.32,
-  /** Move-hue crossfade of the ambient glow (CSS-driven; for reference). */
-  hue: 1.4,
-  /** Hue crossfade under reduced motion (colour only, no movement). */
-  hueReduced: 0.4,
+  ready: 0.2,
 } as const;
 
 /** Scroll behaviour for keyboard paging (D-FLIP-3: instant under reduced motion). */

@@ -2,8 +2,14 @@ import { Button as ButtonPrimitive } from "@base-ui/react/button"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
+/*
+ * Stock shadcn base-nova button. Quipdeck adds only the four touch sizes
+ * at the end (circle, circle-lg, pill, pill-sm): stock sizes are 24 to
+ * 36 px, under the 44 px touch floor (A-9). Do not overwrite from the
+ * registry without keeping them.
+ */
 const buttonVariants = cva(
-  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-[background-color,box-shadow,color,opacity,transform] duration-(--dur-fast) ease-soft outline-none select-none focus-ring active:not-aria-[haspopup]:scale-[0.97] motion-reduce:active:not-aria-[haspopup]:scale-100 disabled:pointer-events-none disabled:opacity-40 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+  "group/button inline-flex shrink-0 items-center justify-center rounded-lg border border-transparent bg-clip-padding text-sm font-medium whitespace-nowrap transition-all outline-none select-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50 active:not-aria-[haspopup]:translate-y-px disabled:pointer-events-none disabled:opacity-50 aria-invalid:border-destructive aria-invalid:ring-3 aria-invalid:ring-destructive/20 dark:aria-invalid:border-destructive/50 dark:aria-invalid:ring-destructive/40 [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
   {
     variants: {
       variant: {
@@ -17,17 +23,6 @@ const buttonVariants = cva(
         destructive:
           "bg-destructive/10 text-destructive hover:bg-destructive/20 focus-visible:border-destructive/40 focus-visible:ring-destructive/20 dark:bg-destructive/20 dark:hover:bg-destructive/30 dark:focus-visible:ring-destructive/40",
         link: "text-primary underline-offset-4 hover:underline",
-        /* Translucent control inside the card (heart, mute): no blur (D-FLIP-2). */
-        glass:
-          "glass-control text-fg-primary hover:bg-control-hover active:bg-control-pressed aria-pressed:bg-control-hover",
-        /* Blurred chrome (desktop previous / next, sheet close): never on a rotating face. */
-        chrome:
-          "glass-chrome text-fg-primary hover:bg-control-hover active:bg-control-pressed",
-        /* Hue-tinted pill (one per screen at most). */
-        tint: "hue-tag hover:brightness-125",
-        /* Quiet text action ("Clear search"). */
-        quiet:
-          "text-fg-secondary hover:bg-control hover:text-fg-primary active:bg-control-pressed",
       },
       size: {
         default:
@@ -41,14 +36,14 @@ const buttonVariants = cva(
         "icon-sm":
           "size-7 rounded-[min(var(--radius-md),12px)] in-data-[slot=button-group]:rounded-lg",
         "icon-lg": "size-9",
-        /* 44 px glass circle (minimum touch target). */
+        /* Quipdeck: 44 px circle (touch floor). */
         circle: "size-11 rounded-full [&_svg:not([class*='size-'])]:size-5",
-        /* 48 px glass circle for chrome (sheet close, prev / next). */
+        /* Quipdeck: 48 px circle (heart, mute, close, previous / next). */
         "circle-lg": "size-12 rounded-full [&_svg:not([class*='size-'])]:size-5",
-        /* 44 px pill with a label. */
-        pill: "h-11 gap-2 rounded-full px-5 text-body",
-        /* 36 px pill (action chips, quiet actions). */
-        "pill-sm": "h-9 gap-1.5 rounded-full px-4 text-label",
+        /* Quipdeck: 48 px pill with a label. */
+        pill: "h-12 gap-2 rounded-full px-6 text-base font-semibold [&_svg:not([class*='size-'])]:size-5",
+        /* Quipdeck: 44 px pill with a short label. */
+        "pill-sm": "h-11 gap-1.5 rounded-full px-4 text-sm font-semibold",
       },
     },
     defaultVariants: {

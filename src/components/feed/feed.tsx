@@ -342,20 +342,20 @@ export function Feed() {
       >
         {ids === null ? (
           <FeedSlide>
-            {/* Painted glass like a card face (D-FLIP-2); bars, never text. */}
+            {/* A card-shaped placeholder; bars, never text. */}
             <div
               data-testid="feed-skeleton"
               aria-hidden="true"
-              className="relative flex h-full w-full flex-col justify-center gap-3 rounded-card p-6 pb-[18%] glass-paint glass-rim lg:rounded-stage lg:p-14 lg:pb-[12%]"
+              className="flex h-full w-full flex-col justify-center gap-3 rounded-4xl bg-card p-6 pb-[18%] lg:h-[540px] lg:p-10 lg:pb-[8%]"
             >
-              <Skeleton className="h-8 w-4/5 rounded-pill lg:h-12 lg:w-[46%]" />
-              <Skeleton className="h-8 w-3/5 rounded-pill lg:h-12 lg:w-[34%]" />
-              <Skeleton className="mt-2 h-4 w-2/5 rounded-pill lg:mt-4 lg:w-[18%]" />
+              <Skeleton className="h-10 w-4/5 rounded-full lg:h-14 lg:w-[46%]" />
+              <Skeleton className="h-10 w-3/5 rounded-full lg:h-14 lg:w-[34%]" />
+              <Skeleton className="mt-2 h-5 w-2/5 rounded-full lg:mt-4 lg:w-[18%]" />
             </div>
           </FeedSlide>
         ) : ids.length === 0 ? (
           <div className="flex h-dvh items-center justify-center px-6">
-            <p className="text-body text-fg-secondary">No cards yet.</p>
+            <p className="text-base text-muted-foreground">No cards yet.</p>
           </div>
         ) : (
           ids.map((id) => (
