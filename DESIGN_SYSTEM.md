@@ -31,8 +31,8 @@ Dark palette as it renders:
 ## 2. Quipdeck additions (outside the theme blocks)
 
 - **Move colour** (`src/lib/move-color.ts`): `moveColorStyle(moveId)` sets `--move: var(--chart-n)` and `--move-foreground: var(--chart-n-foreground)`, `n = (index in movesSortedAZ) % 5 + 1`, unknown move → 1. Paint with `bg-(--move) text-(--move-foreground)`. `--chart-n-foreground` is black for all five in dark; in light, chart-1 (dark indigo) takes white.
-- **Motion**: `--dur-fast` 150 ms, `--dur-base` 240 ms, `--dur-sheet` 280 ms, `--dur-ready` 200 ms, `ease-soft`, `animate-ready-fade` (clip fade-in). Durations drop to 0 under reduced motion. JS twins and springs (flip, nav capsule, heart pop) in `src/components/ui/motion.ts`.
-- **Focus**: stock shadcn rings on the primitives (`focus-visible:border-ring ring-3 ring-ring/50`); custom controls use a full-opacity `ring-ring`; anything else gets a 2 px `--ring` outline from the base layer.
+- **Motion**: `--dur-fast` 150 ms, `--dur-base` 240 ms, `--dur-sheet` 280 ms, `--dur-ready` 200 ms, `ease-soft`, `animate-ready-fade` (clip fade-in). Durations drop to 0 under reduced motion. Springs (flip, nav capsule, heart pop) in `src/components/ui/motion.ts`.
+- **Focus**: stock shadcn rings on the primitives (`focus-visible:border-ring ring-3 ring-ring/50`); on outline and ghost buttons the full-opacity `border-ring` carries the contrast. On `bg-primary` controls (saved heart, default pill) the border matches the fill, so only the 50% halo shows (about 2.3:1 on card, printed as info by the contrast script): a known gap of the stock ring, left as stock. Custom controls (nav links, saved rows) use a full-opacity `ring-ring`; anything else gets a 2 px `--ring` outline from the base layer.
 
 ## 3. Components
 
