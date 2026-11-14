@@ -4,10 +4,10 @@ import { describe, expect, it } from "vitest";
 
 /*
  * D-THEME-7: every class merge goes through the project `cn` in
- * `src/lib/utils.ts`, which knows the custom text-size and colour tokens.
- * The bare `cn` package (or any `cn/...` subpath) merges `text-heading` and
- * `text-fg-primary` as one group and silently drops sizes. Only utils.ts
- * may import it.
+ * `src/lib/utils.ts`, the one place its merge config lives (empty since
+ * D-THEME-8, which uses stock tokens only). A bare `cn` import (or any
+ * `cn/...` subpath) would skip that config the day a custom token returns
+ * and silently drop classes. Only utils.ts may import it.
  */
 const SRC = join(__dirname, "..");
 const ALLOWED = new Set(["lib/utils.ts"]);

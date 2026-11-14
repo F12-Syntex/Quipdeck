@@ -1,16 +1,25 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 "use strict";
 /*
- * Contrast check (P2-2, D-THEME-5). `node scripts/contrast.cjs`
- * Reads EVERY colour from src/app/globals.css at runtime (no token value is
- * duplicated here; an unparsable value throws, never falls back). Optional:
- * `--css <path>` or CONTRAST_CSS=<path> checks another copy of the file.
- * Reads the text and surface tokens from src/app/globals.css, composites the
- * translucent surfaces in sRGB over their worst case (the ambient glow peak
- * under painted glass, for every hue on the ring), and fails (exit 1) when a
- * documented text/surface pair is under 4.5:1 (3:1 for the large-text
- * tokens, listed in LARGE). Pairs DESIGN_SYSTEM.md forbids (fg-tertiary on a
- * card-face control or bubble) are printed as "barred" and not enforced.
+ * Contrast check (D-THEME-5, D-THEME-8). `node scripts/contrast.cjs`
+ * Reads every colour from src/app/globals.css at runtime: the Soft Pop
+ * theme blocks (:root light, .dark) and the Quipdeck additions after them
+ * (the move foregrounds). No token value is duplicated here; an unparsable
+ * value throws. Optional: `--css <path>` or CONTRAST_CSS=<path>.
+ *
+ * It checks the pairs the screens actually paint (REDESIGN_V2 sections 2
+ * and 5), in both modes:
+ *   - text pairs need 4.5:1 (WCAG AA body text). Dark is the shipped theme;
+ *     light is enforced too, so the light screenshots are honest.
+ *   - non-text pairs (focus ring, outline-control border) need 3:1 in dark.
+ *     Light non-text pairs are printed as "info": light is not shipped and
+ *     Soft Pop's light ring is a pale lavender.
+ *   - pairs no screen paints (secondary / accent as a control fill, which
+ *     REDESIGN_V2 forbids, and a destructive fill) are printed as "barred"
+ *     and not enforced.
+ * Translucent fills (`bg-input/30` on outline buttons and the search
+ * field) are composited in sRGB over the surface they sit on.
+ * Exit 1 when an enforced pair fails.
  */
 const fs = require("node:fs");
 const path = require("node:path");
@@ -19,56 +28,70 @@ const ROOT = path.join(__dirname, "..");
 const argIdx = process.argv.indexOf("--css");
 const cssPath = argIdx > -1 ? process.argv[argIdx + 1] : process.env.CONTRAST_CSS;
 if (argIdx > -1 && !cssPath) throw new Error("--css needs a path");
-const css = fs.readFileSync(cssPath ? path.resolve(cssPath) : path.join(ROOT, "src", "app", "globals.css"), "utf8");
-const ring = (() => {
-  const src = fs.readFileSync(path.join(ROOT, "src", "lib", "move-hue.ts"), "utf8");
-  const m = src.match(/MOVE_HUE_RING[^=]*=\s*Object\.freeze\(\[([\s\S]*?)\]\)/);
-  if (!m) throw new Error("MOVE_HUE_RING not found in move-hue.ts");
-  const hues = [...m[1].replace(/\/\/.*$/gm, "").matchAll(/\d+/g)].map((x) => Number(x[0]));
-  if (!hues.length) throw new Error("MOVE_HUE_RING is empty");
-  return hues;
-})();
-const defaultHue = (() => {
-  const m = css.match(/@property\s+--move-hue\s*\{[^}]*initial-value:\s*([\d.]+)/);
-  if (!m) throw new Error("@property --move-hue initial-value not found");
-  return Number(m[1]);
-})();
+const css = fs
+  .readFileSync(cssPath ? path.resolve(cssPath) : path.join(ROOT, "src", "app", "globals.css"), "utf8")
+  .replace(/\/\*[\s\S]*?\*\//g, "");
 
-// ---- css block + token lookup ---------------------------------------------
-function block(header) {
-  const i = css.search(header);
-  if (i < 0) throw new Error("css block not found: " + header);
-  const open = css.indexOf("{", i);
+// ---- top-level blocks -----------------------------------------------------
+/** Bodies of every top-level rule whose selector is exactly `selector`. */
+function topLevelBlocks(selector) {
+  const out = [];
   let depth = 0;
-  for (let j = open; j < css.length; j++) {
-    if (css[j] === "{") depth++;
-    else if (css[j] === "}" && --depth === 0) return css.slice(open + 1, j).replace(/\/\*[\s\S]*?\*\//g, "");
+  let start = 0;
+  for (let i = 0; i < css.length; i++) {
+    const ch = css[i];
+    if (ch === "{") {
+      if (depth === 0) {
+        const head = css.slice(start, i).trim();
+        if (head === selector) {
+          let d = 0;
+          for (let j = i; j < css.length; j++) {
+            if (css[j] === "{") d++;
+            else if (css[j] === "}" && --d === 0) {
+              out.push(css.slice(i + 1, j));
+              break;
+            }
+          }
+        }
+      }
+      depth++;
+    } else if (ch === "}") {
+      depth--;
+      if (depth === 0) start = i + 1;
+    } else if (ch === ";" && depth === 0) {
+      start = i + 1;
+    }
   }
-  throw new Error("unterminated css block: " + header);
+  if (!out.length) throw new Error("no top-level block: " + selector);
+  return out;
 }
-const rootBlock = block(/:root\s*\{/);
-const declOf = (body, prop) => {
-  const m = body.match(new RegExp("(?:^|[\\s;{])" + prop + ":\\s*([^;]+);"));
-  if (!m) throw new Error("declaration not found: " + prop);
-  return m[1].replace(/\s+/g, " ").trim();
-};
-// Resolve var(--x) (except --move-hue) from :root, recursively.
-function resolve(v) {
-  return v.replace(/var\(\s*(--[\w-]+)\s*\)/g, (all, name) =>
-    name === "--move-hue" ? all : resolve(declOf(rootBlock, name)));
+function declarations(body) {
+  const map = new Map();
+  for (const m of body.matchAll(/(--[\w-]+)\s*:\s*([^;]+);/g)) map.set(m[1], m[2].replace(/\s+/g, " ").trim());
+  return map;
 }
-const token = (name) => resolve(declOf(rootBlock, "--" + name));
-const utility = (name, prop) => resolve(declOf(block(new RegExp("@utility\\s+" + name + "\\s*\\{")), prop));
+const light = new Map();
+for (const b of topLevelBlocks(":root")) for (const [k, v] of declarations(b)) light.set(k, v);
+const dark = new Map(light);
+for (const b of topLevelBlocks(".dark")) for (const [k, v] of declarations(b)) dark.set(k, v);
+const MODES = { dark, light };
 
-// ---- colour maths -------------------------------------------------------
-function parseOklch(v, hue) {
-  const m = v.replace(/var\(--move-hue\)/g, String(hue)).match(/^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)(?:\s*\/\s*([\d.]+))?\s*\)$/);
+function token(mode, name) {
+  const v = MODES[mode].get("--" + name);
+  if (v === undefined) throw new Error(`token --${name} missing in ${mode}`);
+  return v.replace(/var\(\s*--([\w-]+)\s*\)/g, (_, n) => token(mode, n));
+}
+
+// ---- colour maths ---------------------------------------------------------
+function parseOklch(v) {
+  const m = v.match(/^oklch\(\s*([\d.]+)\s+([\d.]+)\s+([\d.]+)\s*\)$/);
   if (!m) throw new Error("not oklch: " + v);
-  return { l: +m[1], c: +m[2], h: +m[3], a: m[4] === undefined ? 1 : +m[4] };
+  return { l: +m[1], c: +m[2], h: +m[3] };
 }
 function toSrgb({ l, c, h }) {
   const hr = (h * Math.PI) / 180;
-  const a = c * Math.cos(hr), b = c * Math.sin(hr);
+  const a = c * Math.cos(hr);
+  const b = c * Math.sin(hr);
   const l_ = (l + 0.3963377774 * a + 0.2158037573 * b) ** 3;
   const m_ = (l - 0.1055613458 * a - 0.0638541728 * b) ** 3;
   const s_ = (l - 0.0894841775 * a - 1.291485548 * b) ** 3;
@@ -82,113 +105,79 @@ function toSrgb({ l, c, h }) {
     return v <= 0.0031308 ? 12.92 * v : 1.055 * v ** (1 / 2.4) - 0.055;
   });
 }
-const color = (v, hue = defaultHue) => {
-  const o = parseOklch(v, hue);
-  return { rgb: toSrgb(o), a: o.a };
-};
-// Composite top over an opaque bottom (sRGB space, as browsers do).
-const over = (top, bottom) => top.rgb.map((t, i) => t * top.a + bottom[i] * (1 - top.a));
-const lum = (rgb) => {
+const rgb = (mode, name) => toSrgb(parseOklch(token(mode, name)));
+/** `name` at `alpha` over an opaque `under` (sRGB, as browsers composite). */
+const over = (top, alpha, under) => top.map((t, i) => t * alpha + under[i] * (1 - alpha));
+const lum = (c) => {
   const f = (v) => (v <= 0.04045 ? v / 12.92 : ((v + 0.055) / 1.055) ** 2.4);
-  return 0.2126 * f(rgb[0]) + 0.7152 * f(rgb[1]) + 0.0722 * f(rgb[2]);
+  return 0.2126 * f(c[0]) + 0.7152 * f(c[1]) + 0.0722 * f(c[2]);
 };
 const ratio = (a, b) => {
   const [hi, lo] = [lum(a), lum(b)].sort((x, y) => y - x);
   return (hi + 0.05) / (lo + 0.05);
 };
-const hex = (rgb) => "#" + rgb.map((v) => Math.round(v * 255).toString(16).padStart(2, "0")).join("");
+const hex = (c) => "#" + c.map((v) => Math.round(v * 255).toString(16).padStart(2, "0")).join("");
 
-// ---- surfaces (lightest composite per hue) --------------------------------
-const FG = {
-  "fg-primary": token("fg-primary"),
-  "fg-secondary": token("fg-secondary"),
-  "fg-tertiary": token("fg-tertiary"),
-};
-function surfaces(hue) {
-  const baseTop = color(token("surface-base-top")).rgb;
-  const glowPeak = over(color(token("hue-glow"), hue), baseTop);
-  const paint = (() => {
-    let s = over(color(token("glass-shade")), glowPeak);
-    s = over(color(token("glass-fill-top")), s);
-    return over(color(token("glass-specular")), s);
-  })();
-  const control = color(token("control-fill"));
-  const chrome = over(color(token("chrome-fill")), glowPeak);
-  return {
-    // surface: [rgb, tertiary allowed?]
-    "page (surface-base-top)": [baseTop, true],
-    "surface-raised": [color(token("surface-raised")).rgb, true],
-    "glass-chrome over glow peak": [chrome, true],
-    // P3-2: nav pill active capsule, and the drawer / sheet panel.
-    "nav capsule (control-active on glass-chrome)": [over(color(token("control-active")), chrome), false],
-    "glass-chrome-strong over glow peak (drawer, sheet)": [over(color(token("chrome-fill-strong")), glowPeak), true],
-    "glass-paint over glow peak (card face)": [paint, true],
-    "glass-control on card face": [over(control, paint), false],
-    "glass-control on page (Input)": [over(control, glowPeak), true],
-    "glass-bubble on card face": [over(color(utility("glass-bubble", "background-color")), paint), false],
-    "hue-bubble on card face": [over(color(utility("hue-bubble", "background-color"), hue), paint), false],
-  };
-}
+// ---- pairs ----------------------------------------------------------------
+/** [label, fg(mode) -> rgb, bg(mode) -> rgb, kind] ; kind: text | ui | barred:<mode|all> */
+const T = (name) => (mode) => rgb(mode, name);
+const outlineOn = (surface) => (mode) => over(rgb(mode, "input"), 0.3, rgb(mode, surface));
+const PAIRS = [
+  ["foreground on background (page text)", T("foreground"), T("background"), "text"],
+  ["foreground on card (card back, list rows, nav)", T("foreground"), T("card"), "text"],
+  ["popover-foreground on popover (sheet)", T("popover-foreground"), T("popover"), "text"],
+  ["foreground on muted (trigger bubble, fallback notice)", T("foreground"), T("muted"), "text"],
+  ["muted-foreground on background", T("muted-foreground"), T("background"), "text"],
+  ["muted-foreground on card", T("muted-foreground"), T("card"), "text"],
+  ["muted-foreground on muted (selected row, kbd, notice)", T("muted-foreground"), T("muted"), "text"],
+  ["primary-foreground on primary (nav, saved heart, default button)", T("primary-foreground"), T("primary"), "text"],
+  ["foreground on outline control over card (mute, heart)", T("foreground"), outlineOn("card"), "text"],
+  ["foreground on outline control over background (prev / next, search)", T("foreground"), outlineOn("background"), "text"],
+  ["muted-foreground on outline field over background (search placeholder)", T("muted-foreground"), outlineOn("background"), "text"],
+  ...[1, 2, 3, 4, 5].map((n) => [
+    `chart-${n}-foreground on chart-${n} (move fill: front, response bubble, tag)`,
+    T(`chart-${n}-foreground`),
+    T(`chart-${n}`),
+    "text",
+  ]),
+  ["ring on background (focus, non-text)", T("ring"), T("background"), "ui"],
+  ["ring on card (focus, non-text)", T("ring"), T("card"), "ui"],
+  ["ring on muted (focus on a selected row, non-text)", T("ring"), T("muted"), "ui"],
+  ["input on background (outline control border, non-text)", T("input"), T("background"), "ui"],
+  ["input on card (outline control border, non-text)", T("input"), T("card"), "ui"],
+  // Soft Pop's secondary (teal) and accent (yellow) are never a control fill
+  // (REDESIGN_V2 5.0); light secondary-foreground is white on teal.
+  ["secondary-foreground on secondary (barred: no secondary controls)", T("secondary-foreground"), T("secondary"), "barred"],
+  ["accent-foreground on accent (barred: no accent fills)", T("accent-foreground"), T("accent"), "barred"],
+  // No screen paints a destructive fill (errors only; none in this build).
+  ["destructive-foreground on destructive (barred: no destructive fills)", T("destructive-foreground"), T("destructive"), "barred"],
+];
 
-// ---- run ------------------------------------------------------------------
-const LARGE = new Set([]); // large-text tokens (3:1); every text token here uses fg-primary at 4.5
-const rows = new Map(); // key -> {min, hex, hue, floor, barred}
 const failures = [];
-// hue-scope must re-derive the same hue tokens as :root (comment says "keep in step").
-for (const t of ["glass-shade", "hue-glow", "hue-glow-soft", "hue-shadow", "focus-ring"]) {
-  if (token(t) !== utility("hue-scope", "--" + t)) failures.push(`hue-scope --${t} differs from :root`);
-}
-let lowest = { ratio: Infinity, label: "" };
-
-for (const hue of ring) {
-  for (const [sName, [rgb, tertiaryOk]] of Object.entries(surfaces(hue))) {
-    for (const [fName, fVal] of Object.entries(FG)) {
-      const barred = fName === "fg-tertiary" && !tertiaryOk;
-      const r = ratio(color(fVal).rgb, rgb);
-      const floor = LARGE.has(fName) ? 3 : 4.5;
-      const key = `${fName} on ${sName}`;
-      const cur = rows.get(key);
-      if (!cur || r < cur.min) rows.set(key, { min: r, hex: hex(rgb), hue, floor, barred });
+let lowest = { r: Infinity, label: "" };
+for (const mode of ["dark", "light"]) {
+  console.log(`\n== ${mode}${mode === "dark" ? " (shipped)" : " (screenshots)"}`);
+  for (const [label, fg, bg, kind] of PAIRS) {
+    const f = fg(mode);
+    const b = bg(mode);
+    const r = ratio(f, b);
+    const floor = kind === "ui" ? 3 : 4.5;
+    const enforced = kind === "text" || (kind === "ui" && mode === "dark");
+    const pass = r >= floor;
+    const tag = kind === "barred" ? "barred" : !enforced ? "info" : pass ? "ok" : "FAIL";
+    console.log(`${tag.padEnd(6)} ${r.toFixed(2).padStart(6)}  (floor ${floor}, ${hex(f)} on ${hex(b)})  ${label}`);
+    if (enforced) {
+      if (r < lowest.r) lowest = { r, label: `${mode}: ${label}` };
+      if (!pass) failures.push(`${mode}: ${label}: ${r.toFixed(2)}:1 < ${floor}:1`);
     }
   }
 }
-// hue-tag text on its own fill, and inverse on primary.
-for (const hue of ring) {
-  const paint = surfaces(hue)["glass-paint over glow peak (card face)"][0];
-  const fill = over(color(utility("hue-tag", "background-color"), hue), paint);
-  const r = ratio(color(utility("hue-tag", "color"), hue).rgb, fill);
-  const key = "hue-tag text on its own fill";
-  const cur = rows.get(key);
-  if (!cur || r < cur.min) rows.set(key, { min: r, hex: hex(fill), hue, floor: 4.5, barred: false });
+// The five move colours must stay distinct from each other (one per slot).
+for (const mode of ["dark", "light"]) {
+  const seen = new Set([1, 2, 3, 4, 5].map((n) => hex(rgb(mode, `chart-${n}`))));
+  if (seen.size !== 5) failures.push(`${mode}: the five chart colours are not distinct`);
 }
-rows.set("fg-inverse on fg-primary", {
-  min: ratio(color(token("fg-inverse")).rgb, color(token("fg-primary")).rgb),
-  hex: hex(color(token("fg-primary")).rgb), hue: "-", floor: 4.5, barred: false,
-});
-// Focus ring (non-text, 3:1) on the lightest card face and on the base.
-for (const hue of ring) {
-  for (const [name, rgbOf] of [
-    ["page", (h) => surfaces(h)["page (surface-base-top)"][0]],
-    ["card face", (h) => surfaces(h)["glass-paint over glow peak (card face)"][0]],
-  ]) {
-    const r = ratio(color(token("focus-ring"), hue).rgb, rgbOf(hue));
-    const key = `focus-ring on ${name} (non-text)`;
-    const cur = rows.get(key);
-    if (!cur || r < cur.min) rows.set(key, { min: r, hex: hex(rgbOf(hue)), hue, floor: 3, barred: false });
-  }
-}
-
-console.log(`hues checked: ${ring.join(", ")}  (default ${defaultHue})`);
-for (const [key, v] of rows) {
-  const pass = v.min >= v.floor;
-  const tag = v.barred ? "barred" : pass ? "ok" : "FAIL";
-  console.log(`${tag.padEnd(6)} ${v.min.toFixed(2).padStart(6)}  (floor ${v.floor}, hue ${v.hue}, ${v.hex})  ${key}`);
-  if (!v.barred) {
-    if (v.min < lowest.ratio) lowest = { ratio: v.min, label: key };
-    if (!pass) failures.push(`${key}: ${v.min.toFixed(2)}:1 < ${v.floor}:1`);
-  }
-}
-console.log(`\nlowest enforced ratio: ${lowest.ratio.toFixed(2)}:1  ${lowest.label}`);
+console.log(`\nlowest enforced ratio: ${lowest.r.toFixed(2)}:1  ${lowest.label}`);
 if (failures.length) {
   console.error("\nFAILED pairs:\n  " + failures.join("\n  "));
   process.exit(1);

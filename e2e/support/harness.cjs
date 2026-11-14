@@ -20,8 +20,7 @@ const path = require("node:path");
 const { pathToFileURL } = require("node:url");
 const { chromium } = require("playwright");
 const { startServer } = require("./server.cjs");
-
-const STUB = path.join(__dirname, "yt-stub.js");
+const { routeYouTube, STUB } = require("./yt-routes.cjs");
 const CONTENT = path.join(__dirname, "..", "..", "src", "content");
 
 const PHONE = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true };
@@ -106,12 +105,7 @@ function create(test) {
     page.on("pageerror", (err) => logs.push(`pageerror: ${err.message}`));
     const requests = [];
     page.on("request", (req) => requests.push(req.url()));
-    await page.route("**/embed/**", (r) =>
-      r.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>blank</title>" }),
-    );
-    if (opts.stub !== false) {
-      await page.route("**/iframe_api", (r) => r.fulfill({ path: STUB, contentType: "text/javascript" }));
-    }
+    await routeYouTube(page, { stub: opts.stub !== false });
     if (opts.javaScriptEnabled !== false) {
       await page.addInitScript(
         ({ config, saved, seed, key }) => {
