@@ -10,8 +10,8 @@
  * (CL-2). Its visible content comes from `srcdoc`: a still of the clip,
  * `/__yt-stub/still/<videoId>.jpg`, painted full-bleed (cover) on black, so
  * screenshots look like a real paused player. That path is served from
- * e2e/support/fixtures/ by yt-routes.cjs (a missing still leaves the frame
- * black), so no request is made to YouTube or ytimg. To be safe anyway,
+ * e2e/support/fixtures/ by yt-routes.cjs (a missing still is a black
+ * pixel), so no request is made to YouTube or ytimg. To be safe anyway,
  * also fulfil `**\/embed/**` with a blank page in the test (yt-routes.cjs).
  *
  * Configuration: set `window.__ytStubConfig` before the API loads (an init

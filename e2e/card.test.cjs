@@ -261,8 +261,8 @@ test("CB-5 every card back has a clip, full-bleed at the top when stacked", asyn
   const data = await gather("phone", h.PHONE);
   assert.equal(data.length, h.CARDS.length);
   for (const m of data) {
-    if (m.id === h.BROKEN) continue; // the fallback collapses (CL-18 phone)
     assert.ok(m.clip && m.clip.w > 0, `${m.id}: clip box`);
+    if (m.id === h.BROKEN) continue; // the fallback collapses (CL-18 phone)
     assert.ok(Math.abs(m.clip.y - m.card.y) <= 1, `${m.id}: clip top ${m.clip.y} at the card top ${m.card.y}`);
     assert.ok(Math.abs(m.clip.w - m.card.w) <= 1, `${m.id}: clip ${m.clip.w} spans the card ${m.card.w}`);
     assert.ok(m.clip.b <= m.exchange.y, `${m.id}: clip above the exchange`);

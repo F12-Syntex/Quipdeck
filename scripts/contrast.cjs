@@ -12,6 +12,8 @@
  *   - text pairs need 4.5:1 (WCAG AA body text). Dark is the shipped theme;
  *     light is enforced too, so the light screenshots are honest.
  *   - non-text pairs (focus ring, outline-control border) need 3:1 in dark.
+ *     The stock 50% focus halo is printed as "info" (it is the only ring a
+ *     bg-primary control shows; see DESIGN_SYSTEM.md section 2).
  *     Light non-text pairs are printed as "info": light is not shipped and
  *     Soft Pop's light ring is a pale lavender.
  *   - pairs no screen paints (secondary / accent as a control fill, which
@@ -144,6 +146,10 @@ const PAIRS = [
   ["ring on card (focus, non-text)", T("ring"), T("card"), "ui"],
   ["ring on muted (focus on a selected row, non-text)", T("ring"), T("muted"), "ui"],
   ["input on background (outline control border, non-text)", T("input"), T("background"), "ui"],
+  // The stock shadcn halo (ring-ring/50) alone, as on bg-primary controls
+  // whose border-ring matches their fill. Printed for the record (info).
+  ["ring/50 halo over card (stock focus on a primary control)", (m) => over(rgb(m, "ring"), 0.5, rgb(m, "card")), T("card"), "info"],
+  ["ring/50 halo over background (stock focus on a primary control)", (m) => over(rgb(m, "ring"), 0.5, rgb(m, "background")), T("background"), "info"],
   ["input on card (outline control border, non-text)", T("input"), T("card"), "ui"],
   // Soft Pop's secondary (teal) and accent (yellow) are never a control fill
   // (REDESIGN_V2 5.0); light secondary-foreground is white on teal.
@@ -161,7 +167,7 @@ for (const mode of ["dark", "light"]) {
     const f = fg(mode);
     const b = bg(mode);
     const r = ratio(f, b);
-    const floor = kind === "ui" ? 3 : 4.5;
+    const floor = kind === "ui" || kind === "info" ? 3 : 4.5;
     const enforced = kind === "text" || (kind === "ui" && mode === "dark");
     const pass = r >= floor;
     const tag = kind === "barred" ? "barred" : !enforced ? "info" : pass ? "ok" : "FAIL";

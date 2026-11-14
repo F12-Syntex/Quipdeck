@@ -33,6 +33,8 @@ const VIEWPORTS = [
 // (Gate 1 carry-over); eight rows are enough to scroll on the phone.
 const SAVED = ["c01", "c02", "c03", "c04", "c05", "c07", "c09", "c11"];
 const BROKEN = "c14";
+/** The feed front and back shots: a Big Buck Bunny card (a realistic clip still). */
+const FEED_CARD = "c04";
 const ACTIVE = '[data-testid="card"][data-active="true"]';
 
 /** Phases that gate the design system: shots of /showcase, no reduced set. */
@@ -146,7 +148,7 @@ async function main() {
     {
       const { ctx, page } = await newPage(browser, vp, null, reduced);
       await openFeed(page, server.url);
-      await goToCard(page, "c01");
+      await goToCard(page, FEED_CARD);
       await page.waitForTimeout(settle);
       await shot(page, name("feed-front"), vp);
       await flip(page, vp.touch);
@@ -236,7 +238,7 @@ async function main() {
       const { ctx, page } = await newPage(browser, vp, null);
       await openFeed(page, server.url);
       await useLight(page);
-      await goToCard(page, "c01");
+      await goToCard(page, FEED_CARD);
       await page.waitForTimeout(SETTLE_MS);
       await shot(page, name("feed-front"), vp);
       await flip(page, vp.touch);

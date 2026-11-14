@@ -9,13 +9,15 @@
  *     player paints a real still of the clip instead of a grey slab. The
  *     stills are YouTube thumbnails of the seed videos (Blender Foundation
  *     open movies, CC-BY, and the YouTube IFrame API demo video), saved
- *     locally: tests never request i.ytimg.com (CL-20 checks).
+ *     locally: tests never request i.ytimg.com (CL-20 checks). An id with
+ *     no still gets a black pixel.
  */
 const fs = require("node:fs");
 const path = require("node:path");
 
 const STUB = path.join(__dirname, "yt-stub.js");
 const FIXTURES = path.join(__dirname, "fixtures");
+const BLACK_GIF = Buffer.from("R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==", "base64");
 
 async function routeYouTube(page, { stub = true } = {}) {
   await page.route("**/embed/**", (r) =>
@@ -30,7 +32,9 @@ async function routeYouTube(page, { stub = true } = {}) {
     if (/^[\w-]+\.jpg$/.test(name) && fs.existsSync(file)) {
       return r.fulfill({ path: file, contentType: "image/jpeg" });
     }
-    return r.fulfill({ status: 404, body: "" });
+    // No still for this id (the seeded broken clip): a black pixel, not a
+    // 404, so the page logs no resource error (SV-5, SV-6, R-1 check logs).
+    return r.fulfill({ status: 200, contentType: "image/gif", body: BLACK_GIF });
   });
 }
 
