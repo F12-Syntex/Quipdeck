@@ -1,5 +1,7 @@
 # Quipdeck layout plan
 
+> **Superseded in part by `docs/REDESIGN_V2.md` (D-THEME-8).** Sections 3 to 5 (feed, card front, card back) and every glass, ambient or hue note are replaced by the UI-V2 composition: clip first on the card back, a solid move-colour poster on the front. Structure, routes and behaviour here still stand.
+
 Greenfield: there is no baseline to audit. This document fixes structure, order, sizing and behaviour for every screen on phone and desktop. It contains no colour, type or effect values; those come in Phase 2. Decision IDs (D-...) refer to `DESIGN_DECISIONS.md`. Mobbin references are from `docs/research/REFERENCE_BOARD.md`.
 
 Phase 1 builds exactly this in grey boxes. If a wireframe and a decision disagree, the decision wins and this file is corrected.

@@ -1,5 +1,7 @@
 # 21st.dev components (P3-1 scout)
 
+> **Superseded by `docs/REDESIGN_V2.md` (D-THEME-8).** The ports below were restyled onto the Soft Pop theme in UI-V2 (nav pill, heart, drawer); the glass and grain components are deleted. Kept as history.
+
 Owner: P3-1 (scout), then P3-2 (design system owner: adapt, integrate, fill the Status column). Frozen after P3-2. Inputs: `docs/research/REFERENCE_BOARD.md` section 4, `DESIGN_SYSTEM.md`, Gate 2 rulings in `docs/gates/GATES.md`.
 
 The design system is approved and frozen. Fetched code is a **pattern source** to port onto our tokens in P3-2 (Base UI, `framer-motion`, dark only, reduced motion, no `backdrop-filter` on rotating faces, specular never above 0.12). It is never a restyle. Anything that is not calmer than the P2 version is dropped in P3-2 and the reason recorded here.
