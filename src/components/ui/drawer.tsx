@@ -6,8 +6,8 @@ import { cn } from "@/lib/utils"
 
 /*
  * Bottom drawer (D-SAVED-8). Ported from 21st.dev "Drawer (Base UI)" 24837
- * onto the Quipdeck tokens: glass-chrome-strong, rounded-t-sheet, the
- * --surface-scrim backdrop (no blur on the scrim), --dur-sheet / ease-soft.
+ * onto the theme: bg-popover, rounded-t-4xl, a bg-black/70 backdrop (no
+ * blur), a border on top (Soft Pop is flat: no shadow), --dur-sheet / ease-soft.
  * Bottom only: the side, nested-drawer and indent parts are dropped.
  *
  * Base UI owns swipe-to-dismiss. While the finger moves the popup follows
@@ -35,9 +35,9 @@ function withBase<S>(
 /** Distance the popup extends below the screen, so an upward overshoot never shows a gap. */
 const BLEED = "[--bleed:3rem]"
 
-/** The drawer's glass surface. Exported so the showcase can draw it inline, closed. */
+/** The drawer surface. */
 const drawerSurfaceClassName =
-  "glass-chrome-strong relative flex w-full max-w-[560px] flex-col rounded-t-sheet text-fg-primary outline-none"
+  "relative flex w-full max-w-[560px] flex-col rounded-t-4xl border border-b-0 border-border bg-popover text-popover-foreground outline-none"
 
 function Drawer({
   ...props
@@ -65,7 +65,7 @@ function DrawerBackdrop({
     <DrawerPrimitive.Backdrop
       data-slot="drawer-backdrop"
       className={withBase(
-        "fixed inset-0 z-50 min-h-dvh bg-surface-scrim opacity-[calc(1-var(--drawer-swipe-progress,0))] transition-opacity duration-(--dur-sheet) ease-soft data-swiping:duration-0 data-starting-style:opacity-0 data-ending-style:opacity-0 data-ending-style:duration-[calc(var(--drawer-swipe-strength,1)*var(--dur-sheet))] supports-[-webkit-touch-callout:none]:absolute",
+        "fixed inset-0 z-50 min-h-dvh bg-black/70 opacity-[calc(1-var(--drawer-swipe-progress,0))] transition-opacity duration-(--dur-sheet) ease-soft data-swiping:duration-0 data-starting-style:opacity-0 data-ending-style:opacity-0 data-ending-style:duration-[calc(var(--drawer-swipe-strength,1)*var(--dur-sheet))] supports-[-webkit-touch-callout:none]:absolute",
         className
       )}
       {...props}
@@ -90,7 +90,7 @@ function DrawerViewport({
 }
 
 /**
- * Portal, scrim, viewport and the glass popup in one. Pass `finalFocus` to
+ * Portal, scrim, viewport and the popup in one. Pass `finalFocus` to
  * send focus back to the row that opened it (D-SAVED-7).
  */
 function DrawerPopup({
@@ -146,8 +146,8 @@ function DrawerContent({
 }
 
 /**
- * Grabber strip: a 32 px tall touch row with the 36 x 5 grabber
- * pill). Decorative; the whole popup is swipeable. Takes
+ * Grabber strip: a 32 px tall touch row with the 40 x 5 grabber pill,
+ * 10 px from the top. Decorative; the whole popup is swipeable. Takes
  * `data-testid` and other props.
  */
 function DrawerHandle({ className, ...props }: React.ComponentProps<"div">) {
@@ -156,12 +156,12 @@ function DrawerHandle({ className, ...props }: React.ComponentProps<"div">) {
       aria-hidden="true"
       data-slot="drawer-handle"
       className={cn(
-        "flex h-8 shrink-0 cursor-grab items-center justify-center",
+        "flex h-8 shrink-0 cursor-grab items-start justify-center pt-2.5",
         className
       )}
       {...props}
     >
-      <div className="h-[5px] w-9 rounded-full bg-[oklch(1_0_0/0.28)]" />
+      <div className="h-[5px] w-10 rounded-full bg-border" />
     </div>
   )
 }
@@ -170,7 +170,7 @@ function DrawerTitle({ className, ...props }: DrawerPrimitive.Title.Props) {
   return (
     <DrawerPrimitive.Title
       data-slot="drawer-title"
-      className={withBase("text-heading text-fg-primary", className)}
+      className={withBase("text-2xl leading-7 font-bold tracking-[-0.01em] text-popover-foreground", className)}
       {...props}
     />
   )
@@ -183,7 +183,7 @@ function DrawerDescription({
   return (
     <DrawerPrimitive.Description
       data-slot="drawer-description"
-      className={withBase("text-body text-fg-secondary", className)}
+      className={withBase("text-base text-muted-foreground", className)}
       {...props}
     />
   )
@@ -201,5 +201,4 @@ export {
   DrawerHandle,
   DrawerTitle,
   DrawerDescription,
-  drawerSurfaceClassName,
 }

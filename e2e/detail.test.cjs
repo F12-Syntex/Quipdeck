@@ -59,6 +59,15 @@ const CLOSE_PATHS = {
   Escape: async ({ page }) => page.keyboard.press("Escape"),
   "backdrop tap": async ({ page }) => page.touchscreen.tap(195, 24),
   "drag down on the grabber": async ({ page, ctx }) => {
+    // Measure the sheet at rest, not mid-rise: since UI-V2 the sheet is
+    // taller, and a drag measured during the rise could start low enough to
+    // end below the screen.
+    await page.waitForFunction(() => {
+      const top = document.querySelector('[role="dialog"]').getBoundingClientRect().top;
+      const same = window.__sheetTop === top;
+      window.__sheetTop = top;
+      return same;
+    }, null, { polling: 50 });
     const dialog = await h.box(page.getByRole("dialog"));
     const grab = await h.box(page.locator('[data-testid="sheet-grabber"]'));
     // More than half the sheet height, so it is a deliberate dismissal.
@@ -192,9 +201,16 @@ for (const [name, device] of [["1440x900", h.DESKTOP], ["1024x768", h.DESKTOP_SM
     assert.equal(await detail.getAttribute("data-mode"), "pane");
     assert.equal(await page.getByRole("dialog").count(), 0);
     await page.waitForSelector(`${DETAIL} [data-testid="clip"][data-clip-state="playing"]`);
-    const bd = await h.box(detail.locator('[data-testid="breakdown"]'));
+    // Stacked, clip first (REDESIGN_V2 5.8): title, clip, tag, exchange, breakdown.
+    const title = await h.box(detail.getByRole("heading").first());
     const clip = await h.box(detail.locator('[data-testid="clip"]'));
-    assert.ok(clip.y >= bd.y + bd.height - 1, "clip under the breakdown");
+    const move = await h.box(detail.locator('[data-testid="move"]'));
+    const ex = await h.box(detail.locator('[data-testid="exchange"]'));
+    const bd = await h.box(detail.locator('[data-testid="breakdown"]'));
+    assert.ok(title.y + title.height <= clip.y + 1, "title above the clip");
+    assert.ok(clip.y + clip.height <= move.y + 1, "clip above the move tag");
+    assert.ok(move.y + move.height <= ex.y + 1, "tag above the exchange");
+    assert.ok(ex.y + ex.height <= bd.y + 1, "exchange above the breakdown");
     const card = await page.evaluate(() => {
       const d = document.querySelector('[data-testid="card-detail"]');
       const inner = [...d.querySelectorAll("*")].reduce((m, e) => Math.max(m, e.getBoundingClientRect().width), 0);

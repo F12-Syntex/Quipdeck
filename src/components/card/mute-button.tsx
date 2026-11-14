@@ -13,7 +13,7 @@ export function toggleMuteAndAnnounce(): void {
 }
 
 /**
- * Mute (D-CLIP-7), a 44 px glass circle. The store is the single source of
+ * Mute (D-CLIP-7), a 48 px outline circle (REDESIGN_V2 5.2). The store is the single source of
  * truth; the clip reacts to it. Name says what pressing does: "Unmute"
  * while muted, "Mute" otherwise.
  */
@@ -21,8 +21,8 @@ export function MuteButton() {
   const muted = useMuted();
   return (
     <Button
-      variant="glass"
-      size="circle"
+      variant="outline"
+      size="circle-lg"
       data-testid="mute"
       data-muted={muted ? "true" : "false"}
       aria-label={muted ? "Unmute" : "Mute"}

@@ -53,4 +53,4 @@ Starter move list (final list comes from a separate content pipeline): Literal i
 Accounts, quizzes, recall modes, streaks, ranking/popularity, user submissions. The content pipeline is a separate project.
 
 ## Look and feel
-Rounded, minimal, glassmorphic, smooth, premium, calm. Based on (not copying) Brink iOS (Mobbin): liquid glass, large rounded cards, frosted sheets, pill controls, floating glass nav, ambient tinted background. Plus our own restrained signature layer (grain, subtle animated gradient/shader, refraction, ambient glow). AA contrast, focus states, keyboard nav, prefers-reduced-motion respected. Stack: Next.js + shadcn + Tailwind. Go hard on 21st.dev components where they fit.
+Superseded by `docs/REDESIGN_V2.md` (D-THEME-8): the tweakcn "Soft Pop" theme copied whole, dark, rounded and playful: flat surfaces, DM Sans, large rounded cards, pill controls, one solid chart colour per move. The original glassmorphic, Brink-based direction was built (v1) and rejected. Still required: dark theme, AA contrast, focus states, keyboard nav, prefers-reduced-motion respected. Stack: Next.js + shadcn + Tailwind. Go hard on 21st.dev components where they fit.

@@ -11,20 +11,20 @@ const ITEMS = [
 ] as const;
 
 /**
- * Primary navigation (LAYOUT_PLAN section 2). Fixed, bottom centre on phone,
- * top centre from 1024 px. Two links, no counts, never hides.
+ * Primary navigation (LAYOUT_PLAN section 2, REDESIGN_V2 5.9). Fixed, bottom
+ * centre on phone, top centre from 1024 px. Two links, no counts, never
+ * hides. 60 px tall: the feed and Saved keep 8 px clear of it.
  *
  * Presentation lives in NavPill. This file owns placement and the current
  * route. Each item always receives an explicit `active` boolean so the
- * capsule follows the route; the focus ring is pulled in to a 0 offset so it
- * stays inside the pill outline on the end items.
+ * capsule follows the route.
  */
 export function AppNav() {
   const pathname = usePathname();
   return (
     <NavPill
       aria-label="Primary"
-      className="fixed left-1/2 z-50 w-[200px] -translate-x-1/2 bottom-[calc(env(safe-area-inset-bottom)+8px)] lg:bottom-auto lg:top-5"
+      className="fixed left-1/2 z-50 w-max -translate-x-1/2 bottom-[calc(env(safe-area-inset-bottom)+8px)] lg:bottom-auto lg:top-5"
     >
       {ITEMS.map(({ href, label, Icon }) => {
         const current = pathname === href;
@@ -34,7 +34,6 @@ export function AppNav() {
             render={<Link href={href} />}
             active={current}
             aria-current={current ? "page" : undefined}
-            className="focus-visible:outline-offset-0!"
           >
             <Icon aria-hidden="true" />
             {label}

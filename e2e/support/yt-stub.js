@@ -7,9 +7,12 @@
  *
  * The iframe the stub inserts has the same `src` shape as the real embed
  * (`<host>/embed/<id>?autoplay=1&mute=1&...`), so it can be asserted on
- * (CL-2). Its visible content comes from `srcdoc` (a labelled grey frame),
- * so no request is made to YouTube. To be safe anyway, also fulfil
- * `**\/embed/**` with a blank page in the test.
+ * (CL-2). Its visible content comes from `srcdoc`: a still of the clip,
+ * `/__yt-stub/still/<videoId>.jpg`, painted full-bleed (cover) on black, so
+ * screenshots look like a real paused player. That path is served from
+ * e2e/support/fixtures/ by yt-routes.cjs (a missing still is a black
+ * pixel), so no request is made to YouTube or ytimg. To be safe anyway,
+ * also fulfil `**\/embed/**` with a blank page in the test (yt-routes.cjs).
  *
  * Configuration: set `window.__ytStubConfig` before the API loads (an init
  * script) or at any time before a player is created. Read per player.
@@ -106,12 +109,11 @@
   }
 
   function frameDoc(record) {
+    var id = String(record.videoId).replace(/[^\w-]/g, "");
     return (
-      "<!doctype html><html><body style=\"margin:0;height:100vh;display:flex;" +
-      "align-items:center;justify-content:center;background:#262626;color:#d4d4d4;" +
-      "font:14px system-ui,sans-serif;text-align:center\"><div>Stub clip<br>" +
-      record.videoId.replace(/[<>&"]/g, "") +
-      "</div></body></html>"
+      "<!doctype html><html lang=\"en\"><head><title>Stub clip " + id +
+      "</title></head><body style=\"margin:0;height:100vh;background:#000 " +
+      "url('/__yt-stub/still/" + id + ".jpg') center/cover no-repeat\"></body></html>"
     );
   }
 

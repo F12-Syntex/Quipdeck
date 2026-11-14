@@ -30,7 +30,7 @@ Roles first, `data-testid` where a role is not enough. Phase 4 must not rename t
 | `[data-testid="card-front"]`, `[data-testid="card-back"]` | Faces (hidden face is `inert`) |
 | `[data-testid="cue"]`, `[data-testid="move"]` | Cue heading and move label / tag |
 | `[data-testid="reveal"]` (button, name "Tap to reveal" or "Click to reveal") | Front hint |
-| `[data-testid="flip-back"]` (button, name "Back to cue") | Back, hidden until focused |
+| `[data-testid="flip-back"]` (button, name "Back to cue") | Back, always visible since UI-V2 (ghost button in the action row) |
 | `[data-testid="exchange"]` containing `[data-testid="trigger"]` and `[data-testid="response"]`, each with `[data-testid="speaker"]` and `[data-testid="line"]` | Dialogue |
 | `[data-testid="breakdown"]`, `[data-testid="source"]` | Breakdown, source |
 | `[data-testid="clip"]` with `data-clip-state="idle|loading|playing|paused|error"` | Clip box |
@@ -102,7 +102,7 @@ Roles first, `data-testid` where a role is not enough. Phase 4 must not rename t
 | CF-2 | Move below, smaller | Label equals `getMove(card.move).label` (data-driven). | PW: text match against the content module; cue box is above the move box. |
 | CF-3 | Hint | A visible button "Tap to reveal" (coarse pointer) or "Click to reveal" (fine pointer). | PW: at 390 touch and 1440 mouse; role button, visible. |
 | CF-4 | No video icon, no heart, no mute, no clip | Front has none of them. | PW: inside `card-front`: 0 `iframe`, 0 `heart`, 0 `mute`, 0 `clip`, 0 `svg[data-icon="video"]`. |
-| CF-5 | Phone layout | Text block left-aligned, vertically near centre; hint at the bottom inside the card. | PW at 390x844: hint box bottom is within the card box; cue left edge equals move left edge. Screenshot at the gate. |
+| CF-5 | Phone layout | Solid move-colour poster (UI-V2): eyebrow, cue centred in the free height, move label and reveal button in a footer panel at the bottom. | PW at 390x844 and 375x667: hint inside the card and the panel, lower half; cue and panel share a left edge; cue centred in its zone; panel near the card bottom. Screenshot at the gate. |
 | CF-6 | Desktop layout | Landscape card (width > height), centred. | PW at 1440x900: card width > height; card centre within 4 px of viewport centre on both axes. |
 
 ---
@@ -130,11 +130,11 @@ Roles first, `data-testid` where a role is not enough. Phase 4 must not rename t
 
 | ID | Item | Expected | Verify |
 |---|---|---|---|
-| CB-1 | Move tag at the top | Small tag with the move label, first visible element. | PW: `move` box is above `exchange`; text equals the label. |
+| CB-1 | Move tag under the clip | Tag with the move label, right under the clip and above every other block (UI-V2). | PW: `clip` bottom <= `move` top; `move` above `exchange`, `breakdown`, `heart`; text equals the label. |
 | CB-2 | Exchange as dialogue | Trigger (speaker, line) then response (speaker, line), two separate blocks, not a paragraph. | PW: `trigger` above `response`; speakers and lines equal the content; exchange is a list with 2 items. |
 | CB-3 | Response reads as the punchline | Trigger aligned left, response aligned right (stacked layout). | PW at 390: trigger left edge < response left edge; response right edge >= trigger right edge. |
 | CB-4 | Breakdown | One line under the exchange, equals `card.breakdown`. | PW: text match; in the stacked layout its box is below `response`. |
-| CB-5 | Clip below, on every card | Every card back has a clip box; stacked layout puts it under the breakdown. | PW: flip each card; `clip` exists; at 390 its top is below the breakdown's bottom. |
+| CB-5 | Clip first, on every card | Every card back has a clip box; stacked layout puts it full-bleed at the top (UI-V2, REDESIGN_V2 5.2). | PW at 390: clip top at the card top, clip width = card width, above exchange and breakdown (the broken card collapses, CL-18). |
 | CB-6 | Heart and mute | Both present on the back, each at least 44x44, in the bottom third on phone. | PW at 390x844: boxes >= 44x44; top > 0.6 * viewport height. |
 | CB-7 | Source | Shown when present, absent when not. | PW: `source` text equals `card.source`; UT or PW with a card without source. |
 | CB-8 | Fits one viewport on phone | No scrollable overflow inside the card at heights >= 600. | PW at 375x667 and 360x640, for every card: `card-back` and every descendant have `scrollHeight <= clientHeight + 1`; nothing is clipped outside the card box. |
@@ -162,11 +162,11 @@ All PW checks run against the stubbed API unless marked MAN.
 | CL-11 | Mute toggle | Button toggles sound and its own label. | PW: click `mute`: `data-muted="false"`, name "Mute", `__yt.calls` has `unMute`. Click again: `mute`. |
 | CL-12 | Unmute persists for the visit | After unmuting, the next card's clip is unmuted once playing. | PW: unmute on card 1, go to card 2, flip: after playing, `__yt.calls` for player 2 has `unMute`; button `data-muted="false"`. Also persists into the Saved detail. MAN on iOS Safari (risk R2). |
 | CL-13 | Blocked unmute degrades honestly | If unmute pauses or fails, the clip plays muted and the button says so. | UT: controller with a fake player that pauses on `unMute`. PW with the stub in "block unmute" mode: state `playing`, `data-muted="true"`. |
-| CL-14 | Loading state | Skeleton in the clip box until ready; box size constant. | PW with the stub delaying ready by 1 s: `data-clip-state="loading"` then `playing`; box size identical in both. |
+| CL-14 | Loading state | Skeleton (stock, `bg-muted`) fills the clip box until ready; box size constant. | PW with the stub delaying ready by 1 s: `data-clip-state="loading"` then `playing`; box size identical in both. Gate 4 add-on: with a stalled stub the skeleton fills the frame and changes its pixels. |
 | CL-15 | Fallback on player error | Broken id shows the fallback; exchange text still shows; no iframe remains. | PW: flip card `c14` (`BROKEN_CLIP`): `data-clip-state="error"`, `clip-fallback` visible with "Clip unavailable", `exchange` and `breakdown` visible, 0 iframes, `mute` not visible, `heart` visible. |
 | CL-16 | Fallback when the API cannot load | Script blocked: fallback. | PW: `page.route("**/iframe_api", r => r.abort())`, flip: state `error`. |
 | CL-17 | Fallback on timeout | Ready never fires: fallback within about 8 s. | UT: controller with fake timers. PW with the stub in "never ready" mode (timeout shortened by fake clock if available, else waited). |
-| CL-18 | Fallback keeps layout | Clip box and heart do not move between `loading` and `error`. | PW: compare boxes before and after the error. |
+| CL-18 | Fallback layout | Desktop (two columns): clip box and heart do not move between `loading` and `error`. Stacked (UI-V2, REDESIGN_V2 5.4): the 16:9 box collapses into a 64 px notice row inside the body padding, the heart does not move, the lines step up a size. | PW: compare boxes before and after the error at 1440x900 and 390x844. |
 | CL-19 | Nothing over the player | No element of ours overlaps the iframe. | PW: `elementFromPoint` at the iframe centre and four inner corners returns the iframe. |
 | CL-20 | Keyboard survives a click in the clip | After clicking inside the clip, shortcuts still work. | PW: click clip, press ArrowDown: active card advances. |
 | CL-21 | Privacy | No request to `youtube.com/embed`, `ytimg.com` or any YouTube host before the first flip other than the API script; embeds use nocookie. | PW: record requests from load to just before the first flip. |
@@ -227,7 +227,7 @@ All PW checks run against the stubbed API unless marked MAN.
 | OV-7 | Unsave from the detail | Heart turns off, detail stays open, row disappears from the list; re-pressing re-saves. | PW: press heart: `aria-pressed="false"`, detail still visible; close: row gone. Repeat with press twice: row present. |
 | OV-8 | Unsaving the last card | After close, the empty state shows. | PW. |
 | OV-9 | Does not flip | Tapping the detail body does nothing. | PW: click breakdown text; detail unchanged. |
-| OV-10 | Desktop pane | Clicking a row shows the card in the right pane, non-modal, stacked layout (clip under the text, card at most 560 px wide); the row gets `aria-current="true"`; another row swaps the card; Escape clears. | PW at 1440x900 and 1024x768: `data-mode="pane"`, no `role="dialog"`; `clip` top is below `breakdown` bottom; detail card width <= 560; iframe count stays <= 1 while switching rows. |
+| OV-10 | Desktop pane | Clicking a row shows the card in the right pane, non-modal, stacked layout (title, then clip, tag, exchange, breakdown: UI-V2; card at most 560 px wide); the row gets `aria-current="true"`; another row swaps the card; Escape clears. | PW at 1440x900 and 1024x768: `data-mode="pane"`, no `role="dialog"`; title above `clip`, `clip` above `move`, `move` above `exchange`, `exchange` above `breakdown`; detail card width <= 560; iframe count stays <= 1 while switching rows. |
 | OV-11 | Desktop Back | Back leaves Saved in one step. | PW: from `/`, go to Saved, select two rows, press Back: URL is `/`. |
 | OV-12 | Fallback in the detail | Broken clip shows the fallback; text intact. | PW with `c14` saved. |
 | OV-13 | Sheet height | At most 92% of the viewport height; bottom safe area respected. | PW at 390x844: sheet height <= 0.92 * 844. |
@@ -259,8 +259,8 @@ All PW checks run against the stubbed API unless marked MAN.
 | A-2 | axe clean | No serious or critical violations on feed front, feed back, saved, saved empty, detail. | PW + `axe-core` (installed in P5). |
 | A-3 | Landmarks and headings | One `main` per route; `nav` labelled; `h1` on Saved; cue is a heading in the card and the detail. | PW role queries. |
 | A-4 | Names | Every button has an accessible name; the iframe has a title. | axe; PW. |
-| A-5 | Reduced motion | No rotation, no drift, no pulse, no shimmer, instant keyboard scroll. | PW with `reducedMotion: "reduce"`: no running CSS animations (`document.getAnimations()` empty or all finished) on feed front; FL-11. |
-| A-6 | Reduced transparency | Glass chrome falls back to a solid-enough fill. | PW: emulate `prefers-reduced-transparency: reduce` if the browser supports it and check the nav's computed `backdrop-filter` is `none`; otherwise code review of the media query. |
+| A-5 | Reduced motion | No rotation, no pulse, no skeleton pulse, instant keyboard scroll and sheet. | PW with `reducedMotion: "reduce"`: no running CSS animations (`document.getAnimations()` empty or all finished) on feed front, on the back and in the detail; FL-11. Control: with motion allowed the flip rotates. |
+| A-6 | Reduced transparency | Nothing is translucent since UI-V2: no backdrop-filter anywhere; nav, sheet and pane are opaque theme fills. | PW: no element has a computed `backdrop-filter`; nav and sheet background alpha is 1. |
 | A-7 | Pause mechanism | The clip can be stopped: tap the clip, or flip back. | CL-8; MAN for native tap. |
 | A-8 | Zoom | Usable at 200% zoom on desktop; text not clipped. | PW: viewport 720x450 as a proxy for 1440x900 at 200%; no horizontal scroll on `/` and `/saved`; cue fully inside the card. |
 | A-9 | Touch targets | All targets >= 44x44 on phone. | PW: every `button, a` box at 390. |
@@ -272,9 +272,9 @@ All PW checks run against the stubbed API unless marked MAN.
 | ID | Item | Expected | Verify |
 |---|---|---|---|
 | LF-1 | Dark only | `html.dark`, `color-scheme: dark`; no toggle; same in a light-preferring browser. | PW with `colorScheme: "light"`: background luminance stays dark. |
-| LF-2 | Glass | Card and chrome read as glass; `backdrop-filter` only on non-rotating chrome. | PW: computed `backdrop-filter` is `none` on `card-front`, `card-back` and their descendants; not `none` on the nav. Gate review. |
-| LF-3 | Ambient layer | One soft glow whose hue follows the active card's move; grain; no banding. | PW: the root hue custom property changes when the active card's move changes. Gate review. |
-| LF-4 | Rounded, minimal, calm | Large radii, pill controls, nothing extra on screen. | Gate review against `LAYOUT_PLAN.md` wireframes and the Brink references. |
+| LF-2 | Flat surfaces (UI-V2) | Soft Pop is flat: no glass, no backdrop-filter, opaque card faces and nav. | PW: computed `backdrop-filter` is `none` on every element of `/` and `/saved`; nav, `card-front` and `card-back` backgrounds are opaque. Gate review. |
+| LF-3 | Move colour (UI-V2) | Each move is one of the theme's five chart colours, `(A to Z index) % 5 + 1`, on the card front, the response bubble and the tag; the label is always shown with it. | PW: every card's front, response bubble and tag compute to `var(--chart-n)` for its move; Saved group tags likewise. UT: `src/lib/move-color.test.ts`. |
+| LF-4 | Rounded, playful, high contrast | Large radii, pill controls, the copied Soft Pop theme, nothing extra on screen. | Gate review against `docs/REDESIGN_V2.md` and its composition reference. |
 | LF-5 | Safe areas | No content under the notch or home indicator. | PW with emulated insets where possible; MAN on an iPhone. |
 | LF-6 | `dvh` | No `vh` units in layout. | CMD: `grep -rn "[0-9]vh" src --include=*.tsx --include=*.css` returns only `dvh`/`svh`/`lvh` matches. |
 

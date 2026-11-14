@@ -9,14 +9,11 @@ import { cn } from "@/lib/utils"
 import { capsuleSpring } from "@/components/ui/motion"
 
 /*
- * Nav pill (LAYOUT_PLAN section 2). Ported from 21st.dev "Bottom Nav Bar"
- * 8343: a pill of icon-and-label items with a capsule behind the active
- * one. Kept: the capsule, now a shared-layout element that slides to the
- * new item (capsuleSpring, critically damped). Dropped: the six demo items,
- * the label that springs open on the active item (both labels always show,
- * so nothing changes width), the scale-in on mount, the hover fill, and
- * `focus-visible:ring-0` (the focus ring stays). Surfaces are glass-chrome
- * and --control-active.
+ * Nav pill (REDESIGN_V2 5.9). Ported from 21st.dev "Bottom Nav Bar" 8343:
+ * a pill of icon-and-label items with a capsule behind the active one that
+ * slides to the new item (shared layout, capsuleSpring, critically damped;
+ * instant under reduced motion). The pill is a flat card surface with a
+ * border (Soft Pop has no visible shadows); the capsule is bg-primary.
  *
  * Presentational only. The caller owns the <nav> label, the links and
  * aria-current: render each item as a Next Link with
@@ -31,7 +28,7 @@ function NavPill({ className, children, ...props }: React.ComponentProps<"nav">)
     <nav
       data-slot="nav-pill"
       className={cn(
-        "glass-chrome flex h-[52px] items-stretch gap-1 rounded-pill p-1",
+        "flex h-[60px] items-stretch gap-1 rounded-full border border-border bg-card p-1.5",
         className
       )}
       {...props}
@@ -58,7 +55,7 @@ function NavPillItem({
     "data-slot": "nav-pill-item",
     "data-active": active ? "" : undefined,
     className: cn(
-      "relative isolate flex min-h-11 min-w-[88px] flex-1 items-center justify-center gap-1.5 rounded-pill px-4 text-label text-fg-secondary outline-none select-none transition-[color,transform] duration-(--dur-fast) ease-soft focus-ring hover:text-fg-primary active:scale-[0.97] motion-reduce:active:scale-100 data-[active]:text-fg-primary [&_svg]:size-4 [&_svg]:shrink-0",
+      "relative isolate inline-flex h-12 min-w-[88px] flex-1 items-center justify-center gap-2 rounded-full px-5 text-base font-semibold text-muted-foreground outline-none select-none transition-colors hover:bg-muted hover:text-foreground focus-visible:ring-3 focus-visible:ring-ring data-[active]:text-primary-foreground data-[active]:hover:bg-transparent [&_svg]:size-5 [&_svg]:shrink-0",
       className
     ),
     children: (
@@ -68,7 +65,7 @@ function NavPillItem({
             layoutId="nav-pill-capsule"
             aria-hidden="true"
             data-slot="nav-pill-capsule"
-            className="absolute inset-0 -z-10 rounded-pill bg-[var(--control-active)] shadow-[inset_0_1px_0_0_oklch(1_0_0/0.12),inset_0_0_0_1px_var(--glass-edge)]"
+            className="absolute inset-0 -z-10 rounded-full bg-primary"
             transition={reduced ? { duration: 0 } : capsuleSpring}
           />
         ) : null}

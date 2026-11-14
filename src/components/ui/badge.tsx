@@ -3,8 +3,12 @@ import { useRender } from "@base-ui/react/use-render"
 import { cva, type VariantProps } from "class-variance-authority"
 import { cn } from "@/lib/utils"
 
+/*
+ * Stock shadcn base-nova badge. The move tag is the default variant with
+ * the move fill on top (`MOVE_BADGE` below, REDESIGN_V2 5.0).
+ */
 const badgeVariants = cva(
-  "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-all focus-ring has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
+  "group/badge inline-flex h-5 w-fit shrink-0 items-center justify-center gap-1 overflow-hidden rounded-4xl border border-transparent px-2 py-0.5 text-xs font-medium whitespace-nowrap transition-all focus-visible:border-ring focus-visible:ring-[3px] focus-visible:ring-ring/50 has-data-[icon=inline-end]:pr-1.5 has-data-[icon=inline-start]:pl-1.5 aria-invalid:border-destructive aria-invalid:ring-destructive/20 dark:aria-invalid:ring-destructive/40 [&>svg]:pointer-events-none [&>svg]:size-3!",
   {
     variants: {
       variant: {
@@ -18,10 +22,6 @@ const badgeVariants = cva(
         ghost:
           "hover:bg-muted hover:text-muted-foreground dark:hover:bg-muted/50",
         link: "text-primary underline-offset-4 hover:underline",
-        /* Move tag: hue-tinted pill, 26 px. Set the hue with moveHueStyle(). */
-        move: "hue-tag h-[26px] px-3 text-label",
-        /* Neutral glass pill (no blur). */
-        glass: "glass-control h-[26px] px-3 text-label text-fg-secondary",
       },
     },
     defaultVariants: {
@@ -29,6 +29,13 @@ const badgeVariants = cva(
     },
   }
 )
+
+/**
+ * Move tag classes for a default `Badge`: the move fill and its text colour
+ * (set `moveColorStyle()` on an ancestor), 32 px tall.
+ */
+const MOVE_BADGE =
+  "h-8 rounded-full bg-(--move) px-3.5 text-sm font-semibold text-(--move-foreground)"
 
 function Badge({
   className,
@@ -52,4 +59,4 @@ function Badge({
   })
 }
 
-export { Badge, badgeVariants }
+export { Badge, badgeVariants, MOVE_BADGE }

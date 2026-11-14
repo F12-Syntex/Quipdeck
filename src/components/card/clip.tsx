@@ -10,6 +10,7 @@ import {
 } from "@/lib/clip-controller";
 import { useMuted, visit } from "@/lib/visit-store";
 import { loadYouTubeApi } from "@/lib/youtube";
+import { Skeleton } from "@/components/ui/skeleton";
 
 export type ClipProps = {
   clip: WitCardData["clip"];
@@ -28,13 +29,16 @@ export type ClipState = "idle" | ClipControllerState;
 export const CLIP_SETTLE_MS = 150;
 
 /**
- * Clip box (D-CLIP-1..9). Styled in P4-3: `rounded-clip` frame (20 px,
- * D-CLIP-13), hue wash behind the player, shimmer while loading, fade-in
- * when ready. The box keeps one footprint in every state (16:9, at least
- * 200 px tall). `data-base-ui-swipe-ignore` keeps a drag that starts on the
- * clip from dismissing the Saved drawer (D-SAVED-8); it is inert elsewhere.
- * The player lives in `mountRef`, which React never renders children into;
- * the skeleton sits behind it and the fallback replaces it on error.
+ * Clip box (D-CLIP-1..9, REDESIGN_V2 5.3 and 5.4). A black frame that fills
+ * its parent; the parent sets the size, the radius and, in the feed, the
+ * full-bleed placement. While loading, a stock Skeleton fills the frame
+ * (still under reduced motion); once the player can be tapped it fades in
+ * (`ready-fade`, 200 ms opacity only). On error the frame turns into a
+ * notice (`bg-muted`, the parent collapses the 16:9 slot on phone).
+ * Nothing of ours is drawn over a live player (D-CLIP-9).
+ * `data-base-ui-swipe-ignore` keeps a drag that starts on the clip from
+ * dismissing the Saved drawer (D-SAVED-8); it is inert elsewhere.
+ * The player lives in `mountRef`, which React never renders children into.
  */
 export function Clip({ clip, title, active }: ClipProps) {
   const mountRef = useRef<HTMLDivElement>(null);
@@ -105,23 +109,12 @@ export function Clip({ clip, title, active }: ClipProps) {
       data-clip-state={state}
       data-no-flip=""
       data-base-ui-swipe-ignore=""
-      className="relative isolate aspect-video min-h-[200px] w-full overflow-hidden rounded-clip border border-hairline bg-[oklch(0.14_0.02_var(--move-hue))]"
+      className="relative isolate size-full overflow-hidden rounded-[inherit] bg-black data-[clip-state=error]:bg-muted"
     >
-      {/* Hue wash (idle, loading, error): sits behind the player and is never
-          drawn over it. Uses only the move-hue glow tokens and the specular
-          token at its frozen 0.12. No thumbnail is fetched (D-CLIP-3). */}
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 -z-10"
-        style={{
-          backgroundImage:
-            "radial-gradient(110% 65% at 8% 0%, var(--glass-specular), transparent 62%), radial-gradient(90% 90% at 50% 55%, color-mix(in oklab, var(--hue-glow) 70%, transparent) 0%, transparent 78%), radial-gradient(70% 70% at 90% 100%, var(--hue-glow-soft), transparent 70%)",
-        }}
-      />
       {state === "loading" ? (
-        <div
+        <Skeleton
           aria-hidden="true"
-          className="skeleton-shimmer animate-shimmer pointer-events-none absolute inset-0 -z-10 motion-reduce:animate-none"
+          className="pointer-events-none absolute inset-0 -z-10 rounded-none"
         />
       ) : null}
       <div
@@ -136,16 +129,18 @@ export function Clip({ clip, title, active }: ClipProps) {
       {state === "error" ? (
         <div
           data-testid="clip-fallback"
-          className="absolute inset-0 flex flex-col items-center justify-center gap-1 p-4 text-center"
+          className="absolute inset-0 flex items-center gap-3 px-4 @min-[720px]:justify-center"
         >
           <VideoOff
             aria-hidden="true"
-            className="mb-1 size-6 text-fg-tertiary"
+            className="size-5 shrink-0 text-muted-foreground"
           />
-          <p className="text-body text-fg-secondary">Clip unavailable</p>
-          <p className="text-body text-fg-tertiary">
-            The exchange is all here.
-          </p>
+          <div className="min-w-0">
+            <p className="text-base font-semibold text-foreground">Clip unavailable</p>
+            <p className="text-sm text-muted-foreground">
+              The exchange is all here.
+            </p>
+          </div>
         </div>
       ) : null}
     </div>

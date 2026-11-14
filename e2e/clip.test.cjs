@@ -252,7 +252,7 @@ test("CL-17 fallback on timeout: ready never fires, error within about 8 s", asy
   await act(page, '[data-testid="clip-fallback"]').waitFor({ state: "visible" });
 });
 
-test("CL-18 the fallback keeps the layout: clip box and heart do not move", async () => {
+test("CL-18 desktop: the fallback keeps the layout: clip box and heart do not move", async () => {
   const { page } = await h.open({ stubConfig: { neverReady: true } });
   await h.startHealthy(page, 0);
   await h.flip(page);
@@ -264,6 +264,29 @@ test("CL-18 the fallback keeps the layout: clip box and heart do not move", asyn
   const heart2 = await h.box(act(page, '[data-testid="heart"]'));
   assert.deepEqual(clip2, clip);
   assert.deepEqual(heart2, heart);
+});
+
+test("CL-18 phone: the 16:9 box collapses into a notice row; heart stays put, words take the room", async () => {
+  // REDESIGN_V2 5.4: on the stacked back the failed clip becomes a 64 px
+  // notice inside the body padding; the action row does not move.
+  const { page } = await h.open({ device: h.PHONE, stubConfig: { neverReady: true } });
+  await h.startHealthy(page, 0);
+  await h.flip(page);
+  await h.waitClip(page, "loading");
+  const card = await h.box(page.locator(h.ACTIVE));
+  const clip = await h.box(act(page, '[data-testid="clip"]'));
+  const heart = await h.box(act(page, '[data-testid="heart"]'));
+  const line = await act(page, '[data-testid="line"]').first().evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
+  assert.ok(clip.height >= 200, `full clip box while loading (${clip.height})`);
+  await h.waitClip(page, "error", 14000);
+  const clip2 = await h.box(act(page, '[data-testid="clip"]'));
+  const heart2 = await h.box(act(page, '[data-testid="heart"]'));
+  const line2 = await act(page, '[data-testid="line"]').first().evaluate((e) => parseFloat(getComputedStyle(e).fontSize));
+  assert.deepEqual(heart2, heart, "heart does not move");
+  assert.ok(clip2.height >= 56 && clip2.height <= 80, `notice row height ${clip2.height}`);
+  assert.ok(clip2.y >= card.y + 12 && clip2.x >= card.x + 12, "notice sits inside the body padding");
+  assert.ok(await act(page, '[data-testid="clip"] [data-testid="clip-fallback"]').isVisible(), "fallback inside the clip box");
+  assert.ok(line2 > line, `lines step up a size (${line} -> ${line2})`);
 });
 
 test("CL-19 nothing overlaps the player", async () => {
@@ -335,8 +358,8 @@ test("CL-21 privacy: only the API script before the first flip; embeds use nocoo
   assert.ok(!requests.some((u) => /ytimg\.com/.test(u)));
 });
 
-// ---- Gate 4 add-on: the loading hue wash is visible while the stub stalls.
-test("CL-14 (Gate 4) the hue wash shows while the clip is loading and the stub is stalled", async () => {
+// ---- Gate 4 add-on, UI-V2: the loading skeleton is visible while the stub stalls.
+test("CL-14 (Gate 4) the skeleton fills the clip while it is loading and the stub is stalled", async () => {
   const { page } = await h.open({ device: h.DESKTOP });
   const order = await h.domOrder(page);
   const id = order.find((x) => x !== h.BROKEN);
@@ -350,21 +373,23 @@ test("CL-14 (Gate 4) the hue wash shows while the clip is loading and the stub i
   // The player is ready but never plays: wait until the stub reports BUFFERING.
   await page.waitForFunction(() => window.__yt.players.length > 0 && window.__yt.players[0].ready);
   const clip = act(page, '[data-testid="clip"]');
-  const wash = act(page, '[data-testid="clip"] > div[aria-hidden="true"]:not(.skeleton-shimmer)').first();
-  const style = await wash.evaluate((e) => {
+  const skeleton = act(page, '[data-testid="clip"] [data-slot="skeleton"]');
+  const style = await skeleton.evaluate((e) => {
     const cs = getComputedStyle(e);
     const r = e.getBoundingClientRect();
-    return { bg: cs.backgroundImage, opacity: cs.opacity, w: r.width, h: r.height };
+    const c = e.closest('[data-testid="clip"]').getBoundingClientRect();
+    return { bg: cs.backgroundColor, opacity: cs.opacity, w: r.width, h: r.height, cw: c.width, ch: c.height };
   });
-  assert.match(style.bg, /radial-gradient/);
-  assert.ok(Number(style.opacity) > 0 && style.w > 100 && style.h > 100, JSON.stringify(style));
+  assert.notEqual(style.bg, "rgba(0, 0, 0, 0)", "skeleton has a fill");
+  assert.ok(Number(style.opacity) > 0, JSON.stringify(style));
+  assert.ok(Math.abs(style.w - style.cw) <= 1 && Math.abs(style.h - style.ch) <= 1, "skeleton fills the frame " + JSON.stringify(style));
   assert.equal(await clip.getAttribute("data-clip-state"), "loading", "still loading (stalled)");
-  // Pixels: with the wash hidden the clip looks different.
-  const withWash = await clip.screenshot({ animations: "disabled" });
-  await wash.evaluate((e) => (e.style.display = "none"));
+  // Pixels: with the skeleton hidden the clip looks different (black frame).
+  const withSkeleton = await clip.screenshot({ animations: "disabled" });
+  await skeleton.evaluate((e) => (e.style.display = "none"));
   const without = await clip.screenshot({ animations: "disabled" });
-  const diff = await h.pixelDiff(withWash, without);
-  assert.ok(diff > 2, `mean pixel difference with vs without the wash is ${diff.toFixed(2)}`);
+  const diff = await h.pixelDiff(withSkeleton, without);
+  assert.ok(diff > 2, `mean pixel difference with vs without the skeleton is ${diff.toFixed(2)}`);
   assert.equal(await clip.getAttribute("data-clip-state"), "loading");
 });
 

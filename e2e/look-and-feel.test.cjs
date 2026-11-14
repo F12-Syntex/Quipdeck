@@ -1,9 +1,10 @@
 /* eslint-disable @typescript-eslint/no-require-imports */
 "use strict";
 /*
- * FEATURE_INVENTORY section 14: look and feel. PW-checkable parts only:
- * LF-1, LF-2, LF-3. LF-4 is a gate review, LF-5 is MAN (needs a device with
- * real safe-area insets), LF-6 is CMD (grep for non-dvh viewport units).
+ * FEATURE_INVENTORY section 14: look and feel (D-THEME-8, the Soft Pop
+ * theme). PW-checkable parts only: LF-1, LF-2, LF-3. LF-4 is a gate review,
+ * LF-5 is MAN (needs a device with real safe-area insets), LF-6 is CMD (grep
+ * for non-dvh viewport units).
  */
 const test = require("node:test");
 const assert = require("node:assert/strict");
@@ -47,54 +48,93 @@ test("LF-1 dark only: html.dark, color-scheme dark, no toggle, dark in a light-p
   }
 });
 
-test("LF-2 glass: backdrop-filter is none on the card faces and everything inside; set on the nav", async () => {
-  const { page } = await h.open({ device: h.PHONE });
-  await h.flip(page);
-  await page.waitForFunction(
-    (s) => getComputedStyle(document.querySelector(`${s} [data-testid="card-back"]`)).transform === "none",
-    h.ACTIVE,
+/** Resolve a CSS colour expression to rgb() through a probe element. */
+const resolveColor = (page, expr, scope) =>
+  page.evaluate(
+    ({ expr, scope }) => {
+      const host = scope ? document.querySelector(scope) : document.body;
+      const probe = document.createElement("div");
+      probe.style.backgroundColor = expr;
+      host.appendChild(probe);
+      const out = getComputedStyle(probe).backgroundColor;
+      probe.remove();
+      return out;
+    },
+    { expr, scope },
   );
-  const bad = await page.evaluate(() => {
-    const out = [];
-    const bf = (el) => {
-      const cs = getComputedStyle(el);
-      return cs.backdropFilter || cs.webkitBackdropFilter || "none";
-    };
-    for (const face of document.querySelectorAll('[data-testid="card-front"], [data-testid="card-back"]')) {
-      for (const el of [face, ...face.querySelectorAll("*")]) {
-        if (bf(el) !== "none") out.push(`${face.getAttribute("data-testid")} > ${el.tagName}.${String(el.className).slice(0, 40)}: ${bf(el)}`);
-      }
+
+test("LF-2 flat surfaces: no backdrop-filter anywhere; the nav and card faces are opaque", async () => {
+  for (const route of ["/", "/saved"]) {
+    const { page } = await h.open({ device: h.PHONE, route, saved: ["c01", "c03"] });
+    if (route === "/") {
+      await h.flip(page);
+      await page.waitForFunction(
+        (s) => getComputedStyle(document.querySelector(`${s} [data-testid="card-back"]`)).transform === "none",
+        h.ACTIVE,
+      );
+    } else {
+      await page.waitForSelector('[data-testid="saved-row"]');
     }
-    return out;
-  });
-  assert.deepEqual(bad, []);
-  const nav = await page.locator('nav[aria-label="Primary"]').evaluate((e) => {
-    const cs = getComputedStyle(e);
-    return cs.backdropFilter || cs.webkitBackdropFilter || "none";
-  });
-  assert.notEqual(nav, "none", "the nav is glass");
+    const bad = await page.evaluate(() =>
+      [...document.querySelectorAll("*")]
+        .map((el) => {
+          const cs = getComputedStyle(el);
+          const bf = cs.backdropFilter || cs.webkitBackdropFilter || "none";
+          return bf === "none" ? null : `${el.tagName}.${String(el.className).slice(0, 40)}: ${bf}`;
+        })
+        .filter(Boolean),
+    );
+    assert.deepEqual(bad, [], route);
+    const alpha = (sel) =>
+      page.evaluate((sel) => {
+        const m = getComputedStyle(document.querySelector(sel)).backgroundColor.match(/[\d.]+/g).map(Number);
+        return m.length === 4 ? m[3] : 1;
+      }, sel);
+    assert.equal(await alpha('nav[aria-label="Primary"]'), 1, `${route}: nav is opaque`);
+    if (route === "/") {
+      assert.equal(await alpha(`${h.ACTIVE} [data-testid="card-front"]`), 1, "front is opaque");
+      assert.equal(await alpha(`${h.ACTIVE} [data-testid="card-back"]`), 1, "back is opaque");
+    }
+  }
 });
 
-test("LF-3 the ambient hue follows the active card's move", async () => {
+test("LF-3 move colour: each card front is the theme chart colour of its move (A to Z index mod 5)", async () => {
   const { page } = await h.open({ device: h.DESKTOP });
-  const order = await h.domOrder(page);
-  const move = (id) => h.card(id).move;
-  let i = 0;
-  while (i < order.length - 1 && move(order[i]) === move(order[i + 1])) i++;
-  assert.ok(i < order.length - 1, "two adjacent cards with different moves");
-  const rootHue = () => page.evaluate(() => document.documentElement.style.getPropertyValue("--move-hue").trim());
-  const cardHue = (id) =>
-    page.evaluate((id) => {
-      const back = document.querySelector(`[data-testid="card"][data-card-id="${id}"] [data-testid="card-back"]`);
-      return back.style.getPropertyValue("--move-hue").trim();
-    }, id);
-  await h.goToCard(page, order[i]);
-  await page.waitForFunction((want) => document.documentElement.style.getPropertyValue("--move-hue").trim() === want, await cardHue(order[i]));
-  const first = await rootHue();
-  assert.ok(first !== "", "the root publishes a hue");
-  await h.goToCard(page, order[i + 1]);
-  const want = await cardHue(order[i + 1]);
-  assert.notEqual(want, await cardHue(order[i]));
-  await page.waitForFunction((want) => document.documentElement.style.getPropertyValue("--move-hue").trim() === want, want);
-  assert.notEqual(await rootHue(), first);
+  const sorted = [...h.MOVES].sort((a, b) => a.label.localeCompare(b.label));
+  const slot = (moveId) => (sorted.findIndex((m) => m.id === moveId) % 5) + 1;
+  const fronts = await page.evaluate(() =>
+    Object.fromEntries(
+      [...document.querySelectorAll('[data-testid="feed"] [data-testid="card"]')].map((c) => [
+        c.getAttribute("data-card-id"),
+        {
+          front: getComputedStyle(c.querySelector('[data-testid="card-front"]')).backgroundColor,
+          response: getComputedStyle(c.querySelector('[data-testid="response"] [data-testid="line"]')).backgroundColor,
+          tag: getComputedStyle(c.querySelector('[data-testid="card-back"] [data-testid="move"]')).backgroundColor,
+        },
+      ]),
+    ),
+  );
+  const chart = {};
+  for (let n = 1; n <= 5; n++) chart[n] = await resolveColor(page, `var(--chart-${n})`);
+  assert.equal(new Set(Object.values(chart)).size, 5, "five distinct chart colours");
+  const seen = new Set();
+  for (const c of h.CARDS) {
+    const want = chart[slot(c.move)];
+    assert.equal(fronts[c.id].front, want, `${c.id} front`);
+    assert.equal(fronts[c.id].response, want, `${c.id} response bubble`);
+    assert.equal(fronts[c.id].tag, want, `${c.id} move tag`);
+    seen.add(want);
+  }
+  assert.ok(seen.size >= 4, `the seed cards use ${seen.size} of the five colours`);
+  // Saved: each group's tag is its move's colour.
+  const saved = await h.open({ device: h.PHONE, route: "/saved", saved: h.CARDS.map((c) => c.id) });
+  await saved.page.waitForSelector('[data-testid="move-group"]');
+  const tags = await saved.page.evaluate(() =>
+    [...document.querySelectorAll('[data-testid="move-group"]')].map((g) => [
+      g.getAttribute("data-move-id"),
+      getComputedStyle(g.querySelector("h2 > *")).backgroundColor,
+    ]),
+  );
+  assert.ok(tags.length >= 4, "groups rendered");
+  for (const [moveId, bg] of tags) assert.equal(bg, chart[slot(moveId)], `group ${moveId}`);
 });

@@ -13,8 +13,7 @@ const path = require("node:path");
 const { execSync } = require("node:child_process");
 const { chromium } = require("playwright");
 const { startServer } = require("./support/server.cjs");
-
-const STUB = path.join(__dirname, "support", "yt-stub.js");
+const { routeYouTube } = require("./support/yt-routes.cjs");
 const AXE_PATH = require.resolve("axe-core/axe.min.js");
 const PHONE = { viewport: { width: 390, height: 844 }, hasTouch: true, isMobile: true };
 const DESKTOP = { viewport: { width: 1440, height: 900 } };
@@ -48,10 +47,7 @@ async function open(opts = {}) {
   });
   opened.push(ctx);
   const page = await ctx.newPage();
-  await page.route("**/embed/**", (r) =>
-    r.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>blank</title>" }),
-  );
-  await page.route("**/iframe_api", (r) => r.fulfill({ path: STUB, contentType: "text/javascript" }));
+  await routeYouTube(page);
   const saved = opts.saved;
   await page.addInitScript(
     ({ saved }) => {
@@ -270,33 +266,41 @@ test("A-4 every button and link has an accessible name; the iframe has a title",
 // ---- A-5 reduced motion / FL-11 ----
 const REDUCED = { device: PHONE, reducedMotion: "reduce" };
 
-test("A-5 reduced motion: nothing animates on the feed front; ambient drift is still", async () => {
+test("A-5 reduced motion: nothing animates on the feed front", async () => {
   for (const device of [PHONE, DESKTOP]) {
     const { page } = await open({ device, reducedMotion: "reduce" });
     await page.waitForTimeout(600);
-    const info = await page.evaluate(() => {
-      const glow = document.querySelector(".ambient-glow");
-      const running = document
+    const info = await page.evaluate(() => ({
+      running: document
         .getAnimations()
         .filter((a) => a.playState === "running")
-        .map((a) => a.animationName || a.transitionProperty || a.constructor.name);
-      return {
-        glowAnim: glow ? getComputedStyle(glow).animationName : "missing",
-        running,
-        hint: (() => {
-          const h = document.querySelector('[data-testid="reveal"]');
-          return h ? getComputedStyle(h).animationName : "missing";
-        })(),
-      };
-    });
-    assert.equal(info.glowAnim, "none", "ambient drift animation");
-    assert.equal(info.hint, "none", "hint pulse");
+        .map((a) => a.animationName || a.transitionProperty || a.constructor.name),
+      hint: (() => {
+        const h = document.querySelector('[data-testid="reveal"]');
+        return h ? getComputedStyle(h).animationName : "missing";
+      })(),
+    }));
+    assert.equal(info.hint, "none", "reveal button does not pulse");
     assert.deepEqual(info.running, [], "running animations at rest");
   }
-  // Control: with motion allowed the drift does exist, so the check is meaningful.
+  // Control: with motion allowed the flip does rotate, so the check above is meaningful.
   const { page } = await open({ device: PHONE });
-  const anim = await page.evaluate(() => getComputedStyle(document.querySelector(".ambient-glow")).animationName);
-  assert.match(anim, /drift/);
+  await goToHealthy(page);
+  await page.evaluate((s) => {
+    const card = document.querySelector(s);
+    window.__rot = false;
+    const t0 = performance.now();
+    const tick = () => {
+      for (const el of card.querySelectorAll('[data-testid="card-front"], [data-testid="card-back"]')) {
+        if (/matrix3d/.test(getComputedStyle(el).transform)) window.__rot = true;
+      }
+      if (performance.now() - t0 < 900) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  }, ACTIVE);
+  await page.keyboard.press("Space");
+  await page.waitForTimeout(1000);
+  assert.equal(await page.evaluate(() => window.__rot), true, "the flip rotates when motion is allowed");
 });
 
 test("FL-11 reduced motion: no transform animation on flip, back visible within 300ms", async () => {
@@ -351,17 +355,20 @@ test("FL-11 reduced motion: no transform animation on flip, back visible within 
       return {
         anims: [...new Set(window.__flipRec.flatMap((r) => r.anims))],
         moving,
-        pulse: getComputedStyle(document.querySelector(".ambient-glow")).animationName,
+        running: document
+          .getAnimations()
+          .filter((a) => a.playState === "running")
+          .map((a) => a.animationName || a.transitionProperty || "waapi"),
       };
     });
     assert.deepEqual(res.anims, [], "no transform animation during flip (" + device.viewport.width + ")");
     assert.deepEqual(res.moving, [], "no element changes transform during flip");
-    assert.equal(res.pulse, "none", "ambient drift still");
+    assert.deepEqual(res.running, [], "nothing runs once the back shows (skeleton and fade are still)");
     assert.ok(elapsed < 1000, "back visible promptly, took " + elapsed);
   }
 });
 
-test("A-5 reduced motion: flip never shows a 3D transform and drift stays still on the back and in the detail", async () => {
+test("A-5 reduced motion: flip never shows a 3D transform, and nothing runs in the detail", async () => {
   const { page } = await open(REDUCED);
   await goToHealthy(page);
   await flip(page);
@@ -384,57 +391,34 @@ test("A-5 reduced motion: flip never shows a 3D transform and drift stays still 
 });
 
 // ---- A-6 reduced transparency ----
-test("A-6 reduced transparency: the media query drops backdrop-filter on glass chrome", async () => {
-  const { page } = await open({ device: PHONE });
-  const res = await page.evaluate(() => {
-    const out = { rules: [], navFilter: null };
-    const visit = (rules, inRT) => {
-      for (const r of rules) {
-        if (r.type === CSSRule.MEDIA_RULE) {
-          visit(r.cssRules, inRT || /prefers-reduced-transparency:\s*reduce/.test(r.conditionText));
-        } else {
-          if (inRT && r.style) {
-            const bf = r.style.getPropertyValue("backdrop-filter") || r.style.getPropertyValue("-webkit-backdrop-filter");
-            if (bf) out.rules.push({ sel: r.selectorText, backdrop: bf });
-          }
-          if (r.cssRules) visit(r.cssRules, inRT);
-        }
-      }
-    };
-    for (const sheet of document.styleSheets) {
-      try {
-        visit(sheet.cssRules, false);
-      } catch {}
-    }
-    const nav = document.querySelector('nav[aria-label="Primary"]');
-    const probe = nav && nav.querySelector("[class*=glass]") ? nav.querySelector("[class*=glass]") : nav;
-    out.navFilter = nav ? getComputedStyle(probe).backdropFilter : null;
-    return out;
-  });
-  const dropping = res.rules.filter((r) => /^(none)$/.test(r.backdrop.trim()));
-  assert.ok(dropping.length > 0, "a reduced-transparency rule sets backdrop-filter: none; rules: " + JSON.stringify(res.rules));
-  // Best effort live check: Chromium honours the feature only when emulated.
-  const ctx = await browser.newContext({ ...PHONE });
-  opened.push(ctx);
-  const p = await ctx.newPage();
-  const cdp = await ctx.newCDPSession(p);
-  await cdp
-    .send("Emulation.setEmulatedMedia", { features: [{ name: "prefers-reduced-transparency", value: "reduce" }] })
-    .catch(() => {});
-  await p.route("**/iframe_api", (r) => r.fulfill({ path: STUB, contentType: "text/javascript" }));
-  await p.goto(server.url + "/");
-  await p.waitForSelector('[data-testid="feed"][data-ready="true"]');
-  const supported = await p.evaluate(() => matchMedia("(prefers-reduced-transparency: reduce)").matches);
-  if (supported) {
-    const bad = await p.evaluate(() =>
-      [...document.querySelectorAll("nav[aria-label='Primary'] *, nav[aria-label='Primary']")]
+// D-THEME-8: there is no translucent chrome left to reduce. Every floating
+// surface (nav, sheet, pane, search strip) is an opaque theme fill, so the
+// check is that nothing uses backdrop-filter and those surfaces are opaque.
+test("A-6 reduced transparency: no backdrop-filter anywhere; floating surfaces are opaque", async () => {
+  const opaque = (page, sel) =>
+    page.evaluate((sel) => {
+      const el = document.querySelector(sel);
+      const m = getComputedStyle(el).backgroundColor.match(/[\d.]+/g).map(Number);
+      return m.length === 4 ? m[3] : 1;
+    }, sel);
+  const filters = (page) =>
+    page.evaluate(() =>
+      [...document.querySelectorAll("*")]
         .map((e) => getComputedStyle(e).backdropFilter)
         .filter((v) => v && v !== "none"),
     );
-    assert.deepEqual(bad, [], "nav backdrop-filter under reduced transparency");
-  } else {
-    console.log("A-6 note: browser did not honour prefers-reduced-transparency emulation; checked the media rule only");
-  }
+  const { page } = await open({ device: PHONE, route: "/saved", saved: SAVED });
+  assert.deepEqual(await filters(page), [], "saved list");
+  assert.equal(await opaque(page, 'nav[aria-label="Primary"]'), 1, "nav");
+  await page.locator('[data-testid="saved-row"][data-card-id="c01"]:visible').click();
+  await page.waitForSelector('[data-testid="card-detail"]');
+  assert.deepEqual(await filters(page), [], "sheet open");
+  assert.equal(await opaque(page, '[data-slot="drawer-popup"]'), 1, "sheet");
+  const d = await open({ device: DESKTOP, route: "/saved", saved: SAVED });
+  await d.page.locator('[data-testid="saved-row"][data-card-id="c01"]:visible').click();
+  await d.page.waitForSelector('[data-testid="card-detail"]');
+  assert.deepEqual(await filters(d.page), [], "desktop pane");
+  assert.equal(await opaque(d.page, 'nav[aria-label="Primary"]'), 1, "desktop nav");
 });
 
 // ---- A-7 pause mechanism ----
@@ -529,12 +513,18 @@ async function ringOf(page) {
         cs.outlineStyle !== "none" && parseFloat(cs.outlineWidth) > 0 && !/rgba\(0, 0, 0, 0\)|transparent/.test(cs.outlineColor);
       return { outline: outlineOn ? `${cs.outlineWidth} ${cs.outlineStyle} ${cs.outlineColor}` : "", shadow: cs.boxShadow };
     };
+    // The stock shadcn ring is a box-shadow that transitions (transition-all):
+    // read each state at its end, not mid-transition.
+    const settle = () => el.getAnimations().forEach((a) => a.finish());
     const focusVisible = el.matches(":focus-visible");
+    settle();
     const on = sig();
     // Compare with the same element unfocused: the ring must be what focus adds.
     el.blur();
+    settle();
     const off = sig();
     el.focus({ focusVisible: true });
+    settle();
     const ring = !!(on.outline && on.outline !== off.outline) || (on.shadow !== "none" && on.shadow !== off.shadow);
     const id = el.getAttribute("data-testid") || el.getAttribute("aria-label") || el.textContent.trim().slice(0, 24);
     return { tag: el.tagName.toLowerCase(), id, focusVisible, ring, shown: el.checkVisibility() };
@@ -647,7 +637,7 @@ test("LF-1 dark only: html.dark, color-scheme dark, same in a light-preferring b
     assert.ok(info.dark, "html has class dark");
     assert.match(info.scheme, /dark/);
     assert.equal(info.toggles, 0, "no theme toggle");
-    // Body may be transparent over the ambient layer; fall back to the root colour.
+    // If the body were transparent, fall back to the root colour.
     const effective = info.alpha === 0 ? info.rootBg : info.bg;
     const mm = (effective.match(/[\d.]+/g) || []).map(Number);
     const lin = (c) => ((c /= 255) <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4);

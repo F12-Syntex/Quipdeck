@@ -12,25 +12,15 @@ export type SavedSearchProps = {
 };
 
 /**
- * Live search over saved cards (D-SAVED-2). Sticky under the top safe area
- * on phone and at the top of the page on desktop.
- * The field is blurred chrome (`Input variant="chrome"`), so rows read
- * through it as they scroll under. The blur makes the field a stacking
- * context, hence `z-10` on the icon drawn before it.
+ * Live search over saved cards (D-SAVED-2, REDESIGN_V2 5.6). Sticky under
+ * the top safe area on phone and at the top of the page on desktop. The
+ * field is the stock Input (white 1 px border, 30% white fill), 52 px tall.
+ * A solid `bg-background` strip sits behind the bar, from the screen's top
+ * edge (safe area included) to 8 px under the field, so rows never show
+ * above or through it. No blur. `data-stuck` marks the bar while it is
+ * stuck (a zero-height sentinel just before it leaves the top).
  * A clear button appears with a query; Escape in the field clears it and
  * consumes the key (so it does not also close the desktop pane).
- *
- * While stuck, a backing (`--surface-base-top`, the colour of the ambient
- * base at the top of the screen) covers the strip from the screen's top
- * edge, safe area included, to the field's bottom edge plus a 16 px eased
- * fade (85% at 6 px, 40% at 11 px; final gate: the linear fade still read
- * as attached in motion). It stays 16 px because the first group sits 14 to
- * 17 px under the field when the bar sticks: a longer fade would dim it the
- * moment the backing appears. Rows never fuse with the field and only show
- * below the fade. It shows
- * only while stuck (a zero-height sentinel just before the bar leaves the
- * top), so nothing is painted over the title at rest and the layout never
- * changes.
  */
 export function SavedSearch({ ref, query, onQueryChange }: SavedSearchProps) {
   const barRef = useRef<HTMLDivElement>(null);
@@ -68,16 +58,15 @@ export function SavedSearch({ ref, query, onQueryChange }: SavedSearchProps) {
       <div ref={sentinelRef} aria-hidden="true" className="h-0" />
       <div
         ref={barRef}
-        className="sticky top-[env(safe-area-inset-top)] z-10 py-2 lg:top-0 before:pointer-events-none before:absolute before:-inset-x-4 before:top-[calc(-1*env(safe-area-inset-top))] before:-bottom-2 before:bg-[linear-gradient(to_bottom,var(--surface-base-top)_calc(100%-16px),color-mix(in_oklab,var(--surface-base-top)_85%,transparent)_calc(100%-10px),color-mix(in_oklab,var(--surface-base-top)_40%,transparent)_calc(100%-5px),transparent)] before:opacity-0 data-stuck:before:opacity-100 lg:before:top-0"
+        className="sticky top-[env(safe-area-inset-top)] z-10 py-3 lg:top-0 before:pointer-events-none before:absolute before:-inset-x-4 before:top-[calc(-1*env(safe-area-inset-top))] before:-bottom-2 before:-z-10 before:bg-background lg:before:top-0"
       >
         <div className="relative">
           <SearchIcon
             aria-hidden="true"
-            className="pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-fg-tertiary"
+            className="pointer-events-none absolute top-1/2 left-4 z-10 size-5 -translate-y-1/2 text-muted-foreground"
           />
           <Input
             ref={ref}
-            variant="chrome"
             type="search"
             aria-label="Search saved"
             placeholder="Search saved"
@@ -90,16 +79,16 @@ export function SavedSearch({ ref, query, onQueryChange }: SavedSearchProps) {
                 onQueryChange("");
               }
             }}
-            className="pr-12 pl-11 [&::-webkit-search-cancel-button]:appearance-none"
+            className="h-13 rounded-full pr-12 pl-12 text-base md:text-base [&::-webkit-search-cancel-button]:appearance-none"
           />
           {query !== "" ? (
             <Button
-              variant="quiet"
+              variant="ghost"
               size="circle"
               data-testid="search-clear"
               aria-label="Clear"
               onClick={() => onQueryChange("")}
-              className="absolute top-1/2 right-0.5 z-10 -translate-y-1/2"
+              className="absolute top-1/2 right-1 z-10 -translate-y-1/2"
             >
               <XIcon aria-hidden="true" />
             </Button>

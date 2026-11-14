@@ -3,16 +3,17 @@
 /*
  * Gate screenshots: `npm run shots -- <phase>` writes 8 states x 3 viewports
  * (24 PNGs) plus the saved-bottom phone shot (1 PNG) to docs/gates/<phase>/,
- * with normal motion (each shot waits out the flip spring, the hue fade and
- * the drawer rise). From P4 it also writes the same 24 screens under
- * `prefers-reduced-motion: reduce` (`<state>-reduced-<viewport>.png`).
- * The design-system phases (p2, p3) instead add the showcase (2 PNGs), the
- * card-mock frames (front and back in two move hues, phone and desktop:
- * 8 PNGs) and, when its trigger is present, the open library Drawer
- * (showcase-drawer-*, 2 PNGs).
+ * with normal motion (each shot waits out the flip spring and the drawer
+ * rise), the same 24 screens under `prefers-reduced-motion: reduce`
+ * (`<state>-reduced-<viewport>.png`), and the light variant of Soft Pop
+ * (D-THEME-8) for feed front, feed back and saved populated at 390x844 and
+ * 1440x900 (`<state>-light-<viewport>.png`, 6 PNGs): the app ships dark, so
+ * the shot removes `dark` from <html> after load (no toggle exists).
+ * The design-system phases (p2, p3) instead add the showcase (2 PNGs).
  * Builds once and serves with `next start`.
- * The YouTube IFrame API is the stub (D-TEST-2), so a healthy clip is a
- * labelled frame; the fallback shot uses the seeded broken card.
+ * The YouTube IFrame API is the stub (D-TEST-2), which paints a local still
+ * of each seed video, so a healthy clip looks like a paused player; the
+ * fallback shot uses the seeded broken card.
  * Set E2E_SKIP_BUILD=1 to reuse an existing build.
  */
 const fs = require("node:fs");
@@ -20,7 +21,7 @@ const path = require("node:path");
 const { chromium } = require("playwright");
 const { startServer } = require("../e2e/support/server.cjs");
 
-const STUB = path.join(__dirname, "..", "e2e", "support", "yt-stub.js");
+const { routeYouTube } = require("../e2e/support/yt-routes.cjs");
 const ROOT = path.join(__dirname, "..");
 
 const VIEWPORTS = [
@@ -32,12 +33,25 @@ const VIEWPORTS = [
 // (Gate 1 carry-over); eight rows are enough to scroll on the phone.
 const SAVED = ["c01", "c02", "c03", "c04", "c05", "c07", "c09", "c11"];
 const BROKEN = "c14";
+/** The feed front and back shots: a Big Buck Bunny card (a realistic clip still). */
+const FEED_CARD = "c04";
 const ACTIVE = '[data-testid="card"][data-active="true"]';
 
 /** Phases that gate the design system: shots of /showcase, no reduced set. */
 const SHOWCASE_PHASES = new Set(["p2", "p3"]);
-/** Longest root transition: the hue crossfade (`--dur-hue`, 1400 ms) plus margin. */
-const SETTLE_MS = 1600;
+/** Longest motion: the flip spring (about 600 ms) and the drawer rise, plus margin. */
+const SETTLE_MS = 900;
+/** Light-variant shots (D-THEME-8): screenshots only, no toggle in the app. */
+const LIGHT_VIEWPORTS = new Set(["390x844", "1440x900"]);
+
+/** Switch the page to Soft Pop's light tokens (the app itself is dark only). */
+async function useLight(page) {
+  await page.evaluate(() => {
+    document.documentElement.classList.remove("dark");
+    document.documentElement.style.colorScheme = "light";
+  });
+  await page.waitForTimeout(100);
+}
 
 async function newPage(browser, vp, saved, reduced = false) {
   const ctx = await browser.newContext({
@@ -48,12 +62,7 @@ async function newPage(browser, vp, saved, reduced = false) {
     reducedMotion: reduced ? "reduce" : "no-preference",
   });
   const page = await ctx.newPage();
-  await page.route("**/embed/**", (r) =>
-    r.fulfill({ status: 200, contentType: "text/html", body: "<!doctype html><title>blank</title>" }),
-  );
-  await page.route("**/iframe_api", (r) =>
-    r.fulfill({ path: STUB, contentType: "text/javascript" }),
-  );
+  await routeYouTube(page);
   await page.addInitScript((saved) => {
     if (saved && !sessionStorage.getItem("__seeded")) {
       localStorage.setItem("quipdeck:saved:v1", JSON.stringify(saved));
@@ -124,7 +133,6 @@ async function main() {
   const browser = await chromium.launch();
   const written = [];
   let navGap = null;
-  let drawerShots = 0;
   const shot = async (page, name, vp) => {
     const file = path.join(outDir, `${name}-${vp.name}.png`);
     await page.screenshot({ path: file });
@@ -140,12 +148,12 @@ async function main() {
     {
       const { ctx, page } = await newPage(browser, vp, null, reduced);
       await openFeed(page, server.url);
-      await goToCard(page, "c01");
+      await goToCard(page, FEED_CARD);
       await page.waitForTimeout(settle);
       await shot(page, name("feed-front"), vp);
       await flip(page, vp.touch);
       await page.waitForSelector(`${ACTIVE} [data-testid="clip"][data-clip-state="playing"]`);
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(settle);
       await shot(page, name("feed-back"), vp);
       await ctx.close();
     }
@@ -156,7 +164,7 @@ async function main() {
       await page.waitForTimeout(settle);
       await flip(page, vp.touch);
       await page.waitForSelector(`${ACTIVE} [data-testid="clip"][data-clip-state="error"]`);
-      await page.waitForTimeout(300);
+      await page.waitForTimeout(settle);
       await shot(page, name("feed-back-fallback"), vp);
       await ctx.close();
     }
@@ -185,7 +193,7 @@ async function main() {
         console.log(`saved-bottom: last row bottom ${m.lastBottom}px, nav top ${m.navTop}px, gap ${navGap}px, at end ${m.atEnd}`);
         if (!m.atEnd) throw new Error("saved-bottom: page not scrolled to the end");
         if (navGap < 0) throw new Error(`saved-bottom: last row overlaps the nav by ${-navGap}px`);
-        // Stuck search (P4-8): the backing above the field is drawn, so rows never peek above it.
+        // Stuck search (P4-8, REDESIGN_V2 5.6): the solid backing is drawn, so rows never peek above it.
         const backing = await page.evaluate(() => {
           const bar = document.querySelector('[data-testid="saved-list"] input[type="search"]').closest(".sticky");
           return { stuck: bar.hasAttribute("data-stuck"), opacity: getComputedStyle(bar, "::before").opacity };
@@ -223,9 +231,39 @@ async function main() {
     }
   };
 
+  /** Light variant: feed front, feed back, saved populated (3 per viewport). */
+  const lightScreens = async (vp) => {
+    const name = (state) => `${state}-light`;
+    {
+      const { ctx, page } = await newPage(browser, vp, null);
+      await openFeed(page, server.url);
+      await useLight(page);
+      await goToCard(page, FEED_CARD);
+      await page.waitForTimeout(SETTLE_MS);
+      await shot(page, name("feed-front"), vp);
+      await flip(page, vp.touch);
+      await page.waitForSelector(`${ACTIVE} [data-testid="clip"][data-clip-state="playing"]`);
+      await page.waitForTimeout(SETTLE_MS);
+      await shot(page, name("feed-back"), vp);
+      await ctx.close();
+    }
+    {
+      const { ctx, page } = await newPage(browser, vp, SAVED);
+      await page.goto(server.url + "/saved");
+      await page.waitForSelector('[data-testid="saved-row"]');
+      await useLight(page);
+      await page.waitForTimeout(SETTLE_MS);
+      await shot(page, name("saved-populated"), vp);
+      await ctx.close();
+    }
+  };
+
   try {
     for (const vp of VIEWPORTS) await screens(vp, false);
     if (!showcase) for (const vp of VIEWPORTS) await screens(vp, true);
+    if (!showcase) {
+      for (const vp of VIEWPORTS.filter((v) => LIGHT_VIEWPORTS.has(v.name))) await lightScreens(vp);
+    }
     // Showcase (R-6): phone and desktop, full page (design-system phases).
     for (const vp of showcase ? VIEWPORTS.filter((v) => v.name !== "375x667") : []) {
       const { ctx, page } = await newPage(browser, vp, null, true);
@@ -237,39 +275,14 @@ async function main() {
       await page.screenshot({ path: file, fullPage: true });
       written.push(file);
       console.log("wrote", path.relative(ROOT, file));
-      // Card mock frames (Gate 2 fix 4): one viewport each, over the glow.
-      const frames = await page.$$eval("[data-mock-frame]", (els) =>
-        els.map((e) => e.getAttribute("data-mock-frame")),
-      );
-      if (frames.length !== 4) throw new Error("expected 4 card-mock frames, found " + frames.length);
-      for (const name of frames) {
-        const frame = page.locator(`[data-mock-frame="${name}"]`);
-        await frame.scrollIntoViewIfNeeded();
-        await page.waitForTimeout(150);
-        const mockFile = path.join(outDir, `card-mock-${name}-${vp.name}.png`);
-        await frame.screenshot({ path: mockFile });
-        written.push(mockFile);
-        console.log("wrote", path.relative(ROOT, mockFile));
-      }
-      // Library drawer (P3-2), open, one viewport.
-      const trigger = page.locator('[data-testid="drawer-demo-trigger"]');
-      if (await trigger.count()) {
-        drawerShots++;
-        await trigger.scrollIntoViewIfNeeded();
-        await trigger.click();
-        await page.waitForSelector('[data-testid="drawer-demo-popup"]');
-        await page.waitForTimeout(400);
-        await shot(page, "showcase-drawer", vp);
-        await page.keyboard.press("Escape");
-        await page.waitForSelector('[data-testid="drawer-demo-popup"]', { state: "detached" });
-      }
       await ctx.close();
     }
   } finally {
     await browser.close();
     await server.stop();
   }
-  const expected = showcase ? 35 + drawerShots : 49;
+  // 24 screens + saved-bottom + 24 reduced + 6 light; showcase phases: 25 + 2.
+  const expected = showcase ? 27 : 55;
   if (written.length !== expected) {
     console.error(`expected ${expected} PNGs, wrote ${written.length}`);
     process.exit(1);

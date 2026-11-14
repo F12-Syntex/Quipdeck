@@ -169,18 +169,40 @@ test("CF-4 the front has no iframe, heart, mute, clip or video icon", async () =
   }
 });
 
-test("CF-5 phone layout: hint inside the card at the bottom; cue and move share a left edge", async () => {
-  const { page } = await h.open({ device: h.PHONE });
-  const card = await h.box(page.locator(h.ACTIVE));
-  const front = page.locator(`${h.ACTIVE} [data-testid="card-front"]`);
-  const hint = await h.box(front.locator('[data-testid="reveal"]'));
-  const cue = await h.box(front.locator('[data-testid="cue"]'));
-  const move = await h.box(front.locator('[data-testid="move"]'));
-  assert.ok(hint.y >= card.y && hint.y + hint.height <= card.y + card.height + 1, "hint inside the card");
-  assert.ok(hint.y > card.y + card.height / 2, "hint in the lower half");
-  assert.ok(Math.abs(cue.x - move.x) <= 1, `cue ${cue.x} vs move ${move.x}`);
-  const mid = cue.y + (move.y + move.height - cue.y) / 2;
-  assert.ok(Math.abs(mid - (card.y + card.height / 2)) <= card.height * 0.2, "text block near the vertical centre");
+test("CF-5 phone layout: cue centred in its zone, move panel and hint at the bottom, one left edge", async () => {
+  // REDESIGN_V2 5.1: eyebrow row, cue zone (cue vertically centred), footer
+  // panel (move label, reveal button) pinned to the bottom of the card.
+  for (const device of [h.PHONE, h.SMALL]) {
+    const { page } = await h.open({ device });
+    const card = await h.box(page.locator(h.ACTIVE));
+    const g = await page.evaluate((s) => {
+      const front = document.querySelector(`${s} [data-testid="card-front"]`);
+      const r = (e) => {
+        const b = e.getBoundingClientRect();
+        return { x: b.x, y: b.y, w: b.width, h: b.height, b: b.bottom };
+      };
+      const cue = front.querySelector('[data-testid="cue"]');
+      const move = front.querySelector('[data-testid="move"]');
+      const panel = move.parentElement;
+      return {
+        cue: r(cue),
+        zone: r(cue.parentElement),
+        panel: r(panel),
+        hint: r(front.querySelector('[data-testid="reveal"]')),
+        move: r(move),
+      };
+    }, h.ACTIVE);
+    assert.ok(g.hint.y >= card.y && g.hint.b <= card.y + card.height + 1, "hint inside the card");
+    assert.ok(g.hint.y > card.y + card.height / 2, "hint in the lower half");
+    assert.ok(g.hint.y >= g.panel.y && g.hint.b <= g.panel.b + 1, "hint inside the move panel");
+    assert.ok(card.y + card.height - g.panel.b <= 25, `panel near the card bottom (${card.y + card.height - g.panel.b})`);
+    assert.ok(Math.abs(g.cue.x - g.panel.x) <= 1, `cue ${g.cue.x} vs panel ${g.panel.x}: one left edge`);
+    assert.ok(g.move.y > g.cue.b, "move label below the cue");
+    const zoneMid = g.zone.y + g.zone.h / 2;
+    const cueMid = g.cue.y + g.cue.h / 2;
+    assert.ok(Math.abs(zoneMid - cueMid) <= 2, `cue centred in its zone (${cueMid} vs ${zoneMid})`);
+    assert.ok(g.zone.h > card.height * 0.4, `cue zone is the bulk of the card (${g.zone.h})`);
+  }
 });
 
 test("CF-6 desktop layout: landscape card, centred", async () => {
@@ -192,15 +214,17 @@ test("CF-6 desktop layout: landscape card, centred", async () => {
 });
 
 // ------------------------------------------------------------- card back
-test("CB-1 the move tag is the first visible element and equals the label", async () => {
+test("CB-1 the move tag sits right under the clip, above everything else, and equals the label", async () => {
+  // REDESIGN_V2 5.2: clip first (full-bleed), then the tag row.
   const data = await gather("phone", h.PHONE);
   for (const m of data) {
     const card = h.card(m.id);
     assert.equal(m.moveText, h.moveLabel(card.move), m.id);
-    for (const key of ["exchange", "breakdown", "clip", "heart"]) {
-      assert.ok(m.move.y <= m[key].y, `${m.id}: move above ${key}`);
+    assert.ok(m.clip.b <= m.move.y + 1, `${m.id}: clip above the move tag`);
+    for (const key of ["exchange", "breakdown", "heart"]) {
+      assert.ok(m.move.y + m.move.h <= m[key].y + 1, `${m.id}: move above ${key}`);
     }
-    assert.ok(m.move.y < m.exchange.y, `${m.id}: move above exchange`);
+    assert.ok(m.move.y - m.clip.b <= 32, `${m.id}: tag ${m.move.y - m.clip.b}px under the clip`);
   }
 });
 
@@ -232,12 +256,17 @@ test("CB-4 breakdown equals the card breakdown and sits below the response", asy
   }
 });
 
-test("CB-5 every card back has a clip, under the breakdown when stacked", async () => {
+test("CB-5 every card back has a clip, full-bleed at the top when stacked", async () => {
+  // REDESIGN_V2 5.2: the clip is the first block, flush to the top and sides.
   const data = await gather("phone", h.PHONE);
   assert.equal(data.length, h.CARDS.length);
   for (const m of data) {
     assert.ok(m.clip && m.clip.w > 0, `${m.id}: clip box`);
-    assert.ok(m.clip.y >= m.breakdown.b - 1, `${m.id}: clip top ${m.clip.y} below breakdown bottom ${m.breakdown.b}`);
+    if (m.id === h.BROKEN) continue; // the fallback collapses (CL-18 phone)
+    assert.ok(Math.abs(m.clip.y - m.card.y) <= 1, `${m.id}: clip top ${m.clip.y} at the card top ${m.card.y}`);
+    assert.ok(Math.abs(m.clip.w - m.card.w) <= 1, `${m.id}: clip ${m.clip.w} spans the card ${m.card.w}`);
+    assert.ok(m.clip.b <= m.exchange.y, `${m.id}: clip above the exchange`);
+    assert.ok(m.clip.b <= m.breakdown.y, `${m.id}: clip above the breakdown`);
   }
 });
 
